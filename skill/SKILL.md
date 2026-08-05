@@ -1,124 +1,84 @@
 ---
 name: before-and-after
-description: Captures before/after screenshots of web pages or elements for visual comparison. Use when user says "take before and after", "screenshot comparison", "visual diff", "PR screenshots", "compare old and new", or needs to document UI changes. Accepts two URLs (file://, http://, https://) or two image paths.
-allowed-tools:
-  - Bash(npx @vercel/before-and-after *)
-  - Bash(before-and-after *)
-  - Bash(which before-and-after)
-  - Bash(npm install -g @vercel/before-and-after)
-  - Bash(*/upload-and-copy.sh *)
-  - Bash(curl -s -o /dev/null -w *)
-  - Bash(gh pr view *)
-  - Bash(gh pr edit *)
-  - Bash(vercel inspect *)
-  - Bash(vercel whoami)
-  - Bash(which vercel)
-  - Bash(which gh)
+description: Capture before/after screenshots and video of web pages for visual comparison. Use when the user says "before and after", "screenshot comparison", "PR screenshots", "visual diff", wants to document a UI change, or a PR needs visual proof. Handles net-new pages (after-only), animations (video), and stateful UI (drive the page first, then capture).
 ---
 
-# Before-After Screenshot Skill
+# Before/after captures
 
-> **Package:** `@vercel/before-and-after`
-> Never use `before-and-after` (wrong package).
+You are producing visual proof of a UI change: **before** (the old state — usually production) and **after** (the new state — a preview deployment or local dev server), captured with identical framing so the comparison is honest.
 
-## Agent Behavior Rules
+Your judgment does the interesting work: which pages, which section, what UI state, whether the result is good enough to publish. The scripts in `scripts/` handle only what must be deterministic — identical viewports and timing on both sides, video post-processing, and the output format. **They are an optimization, not a cage**: whenever a scenario doesn't fit them, drive the browser with raw `agent-browser` commands and use the scripts only for the pieces that still apply (or none at all).
 
-**DO NOT:**
-- Switch git branches, stash changes, start dev servers, or assume what "before" is
-- Use `--full` unless user explicitly asks for full page / full scroll capture
+Requires the `agent-browser` CLI (`npm i -g agent-browser && agent-browser install`), plus `ffmpeg` for video.
 
-**DO:**
-- Use `--markdown` when user wants PR integration or markdown output
-- Use `--mobile` / `--tablet` if user mentions phone, mobile, tablet, responsive, etc.
-- Assume current state is **After**
-- If user provides only one URL or says "PR screenshots" without URLs, **ASK**: "What URL should I use for the 'before' state? (production URL, preview deployment, or another local port)"
+## Workflow
 
-## Execution Order (MUST follow)
+1. **Decide the targets.** Map the change to the page(s) that show it. Component-scoped change → the page(s) rendering it plus a CSS `--selector` for the section. Ambiguous → ask, listing what you'd shoot.
+2. **Decide before vs after.** Never guess: after = the change (preview deployment, local dev); before = the same path on production. A net-new page has no before — capture after-only and the output titles it "Preview". Never switch git branches or start servers to manufacture a "before".
+3. **Warm up (optional, cheap, idempotent):** `node scripts/prewarm.mjs` — pre-sizes one browser session per viewport.
+4. **Reach protected pages** — see Authentication below. Verify both URLs answer before shooting: `curl -s -o /dev/null -w "%{http_code}" <url>` (a 30x toward an SSO/login page means blocked).
+5. **Capture:**
 
-1. **Pre-flight** — `which before-and-after || npm install -g @vercel/before-and-after`
-2. **Protection check** — if `.vercel.app` URL: `curl -s -o /dev/null -w "%{http_code}" "<url>"` (401/403 = protected)
-3. **Capture** — `before-and-after "<before-url>" "<after-url>"`
-4. **Upload** — `./scripts/upload-and-copy.sh <before.png> <after.png> --markdown`
-5. **PR integration** — optionally `gh pr edit` to append markdown
+   ```bash
+   node scripts/capture.mjs \
+     --before https://example.com/pricing \
+     --after  https://preview-abc.vercel.app/pricing \
+     --viewport desktop --viewport mobile \
+     [--selector ".pricing-table"] [--full] [--record 5] \
+     --out ./captures
+   ```
 
-**Never skip steps 1-2.**
+   - `--record <seconds>`: video instead of stills (page loads, records N seconds — for animations, transitions, autoplaying sections). Produces an mp4 + poster frame per side.
+   - `--selector-before` / `--selector-after` when the section was renamed or moved.
+   - After-only: omit `--before`.
+   - Writes `manifest.json` into `--out` for the formatter.
+6. **Stateful UI (modals, form steps, hover states):** drive *both* URLs into the same state yourself, then shoot manually — same session names keep the prewarmed viewports:
 
-## Quick Reference
+   ```bash
+   agent-browser --session desktop open <url> && agent-browser --session desktop snapshot -i
+   agent-browser --session desktop click @e42        # …reach the state
+   agent-browser --session desktop screenshot ./captures/modal-desktop-after.png
+   ```
 
-```bash
-# Basic usage
-before-and-after <before-url> <after-url>
+   For a recorded workflow: `record start file.webm` → interact → `record stop`, then convert like capture.mjs does (`ffmpeg -i in.webm -movflags +faststart -pix_fmt yuv420p out.mp4`). Present hand-taken shots directly, or write a `manifest.json` in the same shape if you want the formatter.
+7. **Look at every capture before publishing** (read the image files). Blank frames, error pages, cookie banners, loading spinners, mismatched scroll positions → fix and re-shoot. Never publish a capture you haven't seen.
+8. **Upload** (needed for PR embedding; chat surfaces usually attach files natively):
 
-# With selector
-before-and-after url1 url2 ".hero-section"
+   ```bash
+   BLOB_READ_WRITE_TOKEN=... node scripts/upload.mjs --prefix captures/pr-123 captures/*.png captures/*.mp4 > url-map.json
+   ```
 
-# Different selectors for each
-before-and-after url1 url2 ".old-card" ".new-card"
+   Or your environment's own upload mechanism — anything yielding a `{localPath: publicUrl}` JSON map. Avoid public paste-bins for non-public work.
+9. **Format:**
 
-# Viewports
-before-and-after url1 url2 --mobile    # 375x812
-before-and-after url1 url2 --tablet    # 768x1024
-before-and-after url1 url2 --full      # full scroll
+   ```bash
+   node scripts/format.mjs --manifest captures/manifest.json --url-map url-map.json \
+     [--attribution "@your-agent"] [--markers] [--style text]
+   ```
 
-# From existing images
-before-and-after before.png after.png --markdown
+   Emits the canonical block: side-by-side table per viewport; videos as poster frames linked to the mp4 (GitHub cannot inline-play external videos — it only embeds uploads to its own CDN, which has no API); a single "Preview" column when there's no before. `--markers` wraps the block in `<!-- website-agent:before-after:start/end -->` comments so re-runs can replace the section idempotently.
+10. **Publish:** `gh pr edit <n>` splicing inside the markers (never touch prose outside them), or hand the block to whatever posts for you.
 
-# Via npx (use full package name!)
-npx @vercel/before-and-after url1 url2
-```
+## Authentication
 
-| Flag | Description |
-|------|-------------|
-| `-m, --mobile` | Mobile viewport (375x812) |
-| `-t, --tablet` | Tablet viewport (768x1024) |
-| `--size <WxH>` | Custom viewport |
-| `-f, --full` | Full scrollable page |
-| `-s, --selector` | CSS selector to capture |
-| `-o, --output` | Output directory (default: ~/Downloads) |
-| `--markdown` | Upload images & output markdown table |
-| `--upload-url <url>` | Custom upload endpoint (default: 0x0.st) |
+- **Vercel deployment protection (SSO / Passport):** the project's *automation bypass secret* gets through. With an authenticated `vercel` CLI: read it from `protectionBypass` in `vercel api /v9/projects/<project>`, then either send header `x-vercel-protection-bypass: <secret>` or visit once with `?x-vercel-protection-bypass=<secret>&x-vercel-set-bypass-cookie=true` (sets an httpOnly cookie; navigation afterwards is clean). If no secret exists, ask a project admin to add one (Project Settings → Deployment Protection → Protection Bypass for Automation) — creating one yourself mutates the project's security config; don't do it unprompted. Newly created secrets take a few seconds to propagate.
+- **Login walls with OAuth/SSO handoff through localhost:** flows that bounce through a `127.0.0.1` helper fail headless Chrome's Local Network Access checks. Install the launch-mutator plugin once — `agent-browser plugin add agent-browser-plugin-allow-loopback` — then log in interactively via agent-browser; the session persists in the daemon.
+- Verify auth *before* capturing — a login page screenshot labeled "before" is worse than no screenshot.
 
-## Image Upload
+## Parity rules (what makes comparisons honest)
 
-```bash
-# Default (0x0.st - no signup needed)
-./scripts/upload-and-copy.sh before.png after.png --markdown
+- Same viewport, path, UI state, and scroll position on both sides — `capture.mjs` enforces the first two; you enforce the rest.
+- Dismiss cookie/consent banners identically on both sides before shooting.
+- Video: same duration, same start trigger (capture.mjs starts both right after network-idle + settle).
+- Don't use `--full` unless asked — full-page captures of different-length pages destroy side-by-side alignment.
 
-# GitHub Gist
-IMAGE_ADAPTER=gist ./scripts/upload-and-copy.sh before.png after.png --markdown
-```
+## Scripts
 
-## Vercel Deployment Protection
+| Script | Does |
+|---|---|
+| `capture.mjs` | parity screenshots/video of 1–2 URLs across viewports → files + `manifest.json` |
+| `format.mjs` | manifest + URL map → canonical markdown block (`--style text` for chat) |
+| `prewarm.mjs` | idempotent daemon + per-viewport session warm-up |
+| `upload.mjs` | files → Vercel Blob (`BLOB_READ_WRITE_TOKEN`) → `{path: url}` map |
 
-If `.vercel.app` URL returns 401/403:
-
-1. Check Vercel CLI: `which vercel && vercel whoami`
-2. If available: `vercel inspect <url>` to get bypass token
-3. If not: Tell user to provide bypass token, take manual screenshots, or disable protection
-
-## PR Integration
-
-```bash
-# Check for gh CLI
-which gh
-
-# Get current PR
-gh pr view --json number,body
-
-# Append screenshots to PR body
-gh pr edit <number> --body "<existing-body>
-
-## Before and After
-<generated-markdown>"
-```
-
-If no `gh` CLI: output markdown and tell user to paste manually.
-
-## Error Reference
-
-| Error | Fix |
-|-------|-----|
-| `command not found` | `npm install -g @vercel/before-and-after` |
-| `could not determine executable` | Use `npx @vercel/before-and-after` (full name) |
-| 401/403 on .vercel.app | See Vercel protection section |
-| Element not found | Verify selector exists on page |
+Script interfaces version with this skill and may change freely — nothing else should depend on them. (`npx before-and-after` remains as a frozen alias for `capture.mjs`, and will never grow flags.)

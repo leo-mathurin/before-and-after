@@ -1,7 +1,7 @@
 {
   "name": "@vercel/before-and-after",
-  "version": "0.0.4",
-  "description": "Simple before/after screenshot tool for capturing and comparing web pages",
+  "version": "0.1.0",
+  "description": "Agent skill for capturing before/after screenshots and video of web pages",
   "author": "James Clements",
   "license": "PolyForm-Shield-1.0.0",
   "repository": {
@@ -19,33 +19,19 @@
     "comparison",
     "capture",
     "web",
-    "testing",
-    "cli"
+    "agent",
+    "skill"
   ],
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "bin": {
-    "before-and-after": "dist/bin/cli.js"
-  },
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
+    "before-and-after": "skill/scripts/capture.mjs"
   },
   "files": [
-    "dist",
     "skill"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.pkg.json",
-    "prepublishOnly": "rm -rf dist && pnpm build && pnpm test:unit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:unit": "vitest run tests/unit",
-    "test:browser": "vitest run tests/browser",
-    "test:integration": "vitest run tests/integration"
+    "test": "vitest run tests/unit",
+    "test:watch": "vitest"
   },
   "peerDependencies": {
     "agent-browser": "*"
