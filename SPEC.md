@@ -23,7 +23,7 @@ Status: in progress on PR #5.
 - [x] Verify local browser capture, protected Preview access, package contents, and real GitHub attachment rewriting.
 - [x] Reject protected Preview routes that reach Vercel `404: NOT_FOUND`.
 - [x] Equalize full-page image-pair heights with bottom-only capture padding so GitHub tables align at the top.
-- [ ] Verify the final rendered PR, including loaded media dimensions and the absence of local paths.
+- [x] Verify the final rendered PR, including loaded media dimensions and the absence of local paths.
 
 ### Full-page alignment decision
 
@@ -39,11 +39,11 @@ Constraints:
 
 ## Release 2: video tables
 
-- [ ] Upload videos first to obtain final GitHub `user-attachments` URLs.
-- [ ] Render final URLs in HTML `<video>` elements inside table cells.
-- [ ] Make the two-step publish flow retryable without leaving broken PR markup.
-- [ ] Verify playback, controls, layout, and cleanup in a disposable PR fixture.
-- [ ] Preserve own-line video attachments as the simple fallback.
+- [x] Upload videos first to obtain final GitHub `user-attachments` URLs.
+- [x] Render final URLs in HTML `<video>` elements inside table cells.
+- [x] Make the two-step publish flow retryable without leaving broken PR markup.
+- [x] Verify playback, controls, layout, and cleanup in a disposable PR fixture.
+- [x] Preserve own-line video attachments as the simple fallback.
 
 ## Release 3: capture intelligence
 
@@ -60,10 +60,22 @@ The skill should eventually decide what evidence best proves the change, then it
 ### Evidence selection
 
 - [ ] Choose desktop, mobile, or both from the changed surface and responsive behavior.
+- [ ] Consider 2× device scale factor for HiDPI evidence, for example a `1440px` CSS viewport producing a `2880px`-wide image.
+- [ ] Balance HiDPI sharpness against attachment size, upload time, GitHub downscaling, and the extra cost of full-page captures.
 - [ ] Choose viewport screenshot, full-page screenshot, scoped element capture, or video.
 - [ ] Prefer the smallest capture that convincingly demonstrates the change.
 - [ ] Detect when page-height divergence makes a full-page table misleading.
 - [ ] Choose representative states for hover, focus, expanded content, dialogs, tabs, and multistep flows.
+
+### PR placement
+
+- [ ] Place visual evidence toward the top of a new or existing PR, after enough introductory context for the reader to understand what is being shown.
+- [ ] Prefer inserting after an existing Preview section, deployment link, or short opening summary and before implementation-heavy sections such as Details, Changes, Testing, or Notes.
+- [ ] Treat headings and section order as semantic hints rather than requiring exact heading names.
+- [ ] Never invent, rewrite, or expand the PR description merely to create a placement anchor.
+- [ ] Preserve all existing prose and move or replace only the marked before-and-after block.
+- [ ] Fall back conservatively when no clear anchor exists instead of splitting a paragraph, list, table, code block, or other Markdown structure.
+- [ ] Verify that the rendered evidence appears in the intended reading order, not only that the source markers were inserted successfully.
 
 ### State parity
 
@@ -78,6 +90,8 @@ The skill should eventually decide what evidence best proves the change, then it
 - [ ] Detect screenshots that are accidentally identical when a visible change is expected.
 - [ ] Detect obviously different framing or scale between a pair.
 - [ ] Confirm image dimensions, media load, video playability, and final GitHub rendering.
+- [ ] Improve agent-browser's native recorder upstream from its hardcoded 10 fps, ideally with a configurable 30 fps default and an optional 60 fps mode for motion-heavy evidence.
+- [ ] Probe a recording's native cadence and reject frame-rate upsampling that merely duplicates frames.
 - [ ] Prevent secrets, protected query parameters, tokens, or browser state from entering media or PR text.
 - [ ] Re-capture after late code or copy changes invalidate earlier evidence.
 

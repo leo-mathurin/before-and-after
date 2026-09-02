@@ -1,47 +1,30 @@
 #!/usr/bin/env node
 
-import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { mkdtempSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { findExternalBinary } from "./lib.mjs";
+import { agentBrowserSession, pngDimensions, probeVideo, root, run } from "./lib.mjs";
 
-const root = resolve(import.meta.dirname, "../..");
 const output = mkdtempSync(join(tmpdir(), "before-and-after-verify-"));
 const session = `before-and-after-${process.pid}`;
-const agentBrowser = findExternalBinary("agent-browser", root);
-
-function run(command, args, options = {}) {
-  return new Promise((resolvePromise, reject) => {
-    const child = spawn(command, args, { cwd: options.cwd ?? root, stdio: ["ignore", "pipe", "pipe"] });
-    let stdout = "";
-    let stderr = "";
-    child.stdout.on("data", (chunk) => (stdout += chunk));
-    child.stderr.on("data", (chunk) => (stderr += chunk));
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) resolvePromise(stdout);
-      else reject(new Error(`${command} ${args.join(" ")} failed\n${stderr || stdout}`));
-    });
-  });
-}
+const before = agentBrowserSession(session);
+const after = agentBrowserSession(`${session}-after`);
+const skill = readFileSync(resolve(root, "skill/SKILL.md"), "utf8");
 
 const pages = {
   "/before": "<!doctype html><title>Before</title><main style='min-height:1400px;background:#eee'><h1>Before</h1><button>Open</button></main>",
   "/after": "<!doctype html><title>After</title><main style='min-height:900px;background:#eee'><h1>After</h1><button>Open</button></main>",
 };
 
-function pngDimensions(file) {
-  const header = readFileSync(file).subarray(0, 24);
-  return { width: header.readUInt32BE(16), height: header.readUInt32BE(20) };
+const PROBE_HEADER = "x-before-and-after-probe";
+const requests = [];
+
+async function pageHeight(browser) {
+  return Number(await browser.text("eval", "document.documentElement.scrollHeight"));
 }
 
-async function pageHeight(session) {
-  return Number(await run(agentBrowser, ["--session", session, "eval", "document.documentElement.scrollHeight"]));
-}
-
-async function padToHeight(session, targetHeight) {
+async function padToHeight(browser, targetHeight) {
   const script = `(() => {
     const currentHeight = document.documentElement.scrollHeight;
     const delta = ${targetHeight} - currentHeight;
@@ -54,62 +37,86 @@ async function padToHeight(session, targetHeight) {
     document.body.append(spacer);
     return document.documentElement.scrollHeight;
   })()`;
-  return Number(await run(agentBrowser, ["--session", session, "eval", script]));
+  return Number(await browser.text("eval", script));
 }
 
 const server = createServer((request, response) => {
+  requests.push({ url: request.url, probeHeader: request.headers[PROBE_HEADER] ?? null });
   const body = pages[request.url] ?? "Not found";
   response.writeHead(pages[request.url] ? 200 : 404, { "content-type": "text/html" });
   response.end(body);
 });
 
 await new Promise((resolvePromise) => server.listen(0, "127.0.0.1", resolvePromise));
-const address = server.address();
-const origin = `http://127.0.0.1:${address.port}`;
+const origin = `http://127.0.0.1:${server.address().port}`;
 
 try {
-  const version = (await run(agentBrowser, ["--version"])).trim();
-  await run(agentBrowser, ["skills", "get", "core", "--full"]);
-  await run(agentBrowser, ["--session", session, "open", `${origin}/before`]);
-  await run(agentBrowser, ["--session", session, "set", "viewport", "1280", "720"]);
-  const beforeHeight = await pageHeight(session);
+  const version = (await run(before.binary, ["--version"])).trim();
+  await run(before.binary, ["skills", "get", "core", "--full"]);
 
-  const afterSession = `${session}-after`;
-  await run(agentBrowser, ["--session", afterSession, "open", `${origin}/after`]);
-  await run(agentBrowser, ["--session", afterSession, "set", "viewport", "1280", "720"]);
-  const afterHeight = await pageHeight(afterSession);
-  const targetHeight = Math.max(beforeHeight, afterHeight);
-  await padToHeight(session, targetHeight);
-  await padToHeight(afterSession, targetHeight);
+  // Equal-height full-page pair, following the SKILL.md "Equal-height image pairs" steps.
+  await before("open", `${origin}/before`);
+  await before("set", "viewport", "1280", "720");
+  await after("open", `${origin}/after`, "--headers", JSON.stringify({ [PROBE_HEADER]: "1" }));
+  await after("set", "viewport", "1280", "720");
+  const targetHeight = Math.max(await pageHeight(before), await pageHeight(after));
+  await padToHeight(before, targetHeight);
+  await padToHeight(after, targetHeight);
+  await before("screenshot", join(output, "before.png"), "--full");
+  await after("screenshot", join(output, "after.png"), "--full");
 
-  await run(agentBrowser, ["--session", session, "screenshot", join(output, "before.png"), "--full"]);
-  await run(agentBrowser, ["--session", afterSession, "screenshot", join(output, "after.png"), "--full"]);
-  await run(agentBrowser, ["--session", afterSession, "record", "start", join(output, "preview.webm")]);
-  await run(agentBrowser, ["--session", afterSession, "wait", "250"]);
-  await run(agentBrowser, ["--session", afterSession, "record", "stop"]);
-
-  for (const file of ["before.png", "after.png", "preview.webm"]) {
-    if (statSync(join(output, file)).size === 0) throw new Error(`${file} is empty`);
-  }
   const beforeDimensions = pngDimensions(join(output, "before.png"));
   const afterDimensions = pngDimensions(join(output, "after.png"));
   if (JSON.stringify(beforeDimensions) !== JSON.stringify(afterDimensions)) {
     throw new Error(`full-page captures have mismatched dimensions: ${JSON.stringify({ beforeDimensions, afterDimensions })}`);
   }
+  if (afterDimensions.height <= 720) throw new Error("full-page capture did not extend past the viewport");
 
+  // Recording: must decode to real frames, not just be a non-empty file.
+  requests.length = 0;
+  await after("record", "start", join(output, "preview.webm"));
+  await after("wait", "400");
+  await after("record", "stop");
+  if (statSync(join(output, "preview.webm")).size === 0) throw new Error("preview.webm is empty");
+  const video = await probeVideo(join(output, "preview.webm"));
+  if (video.frames !== null && video.frames < 2) throw new Error(`recording decoded to ${video.frames} frame(s)`);
+
+  // SKILL.md warns that `record start` opens a fresh context that drops origin-scoped headers.
+  // Verify the claim against the installed agent-browser instead of asserting the sentence exists.
+  const afterRecordStart = requests.filter((entry) => entry.url === "/after");
+  const headerDropped = afterRecordStart.length > 0 && afterRecordStart.every((entry) => entry.probeHeader === null);
+  const skillWarnsAboutRecordingContext = /record start[\s\S]{0,200}fresh browser context/i.test(skill);
+  if (headerDropped && !skillWarnsAboutRecordingContext) {
+    throw new Error(`${version} drops custom headers after \`record start\`, but SKILL.md no longer warns about the fresh recording context`);
+  }
+  if (!headerDropped) {
+    console.warn(
+      `note: ${version} ${afterRecordStart.length ? "preserved custom headers" : "did not re-request the page"} after \`record start\`; the SKILL.md recording-context caveat may be stale for this version`,
+    );
+  }
+
+  // SKILL.md discloses the recorder's native cadence; keep the number honest for the installed version.
+  if (video.fps !== null) {
+    const documentedCadence = new RegExp(`\\b${Math.round(video.fps)} fps\\b`);
+    if (!documentedCadence.test(skill)) {
+      throw new Error(`${version} records at ${video.fps} fps, but SKILL.md does not mention "${Math.round(video.fps)} fps"`);
+    }
+  }
+
+  // The generated files must flow through the formatter exactly as SKILL.md publishes them.
   const formatter = resolve(root, "skill/scripts/format.mjs");
   const imageArgs = [formatter, "--before", "before.png", "--after", "after.png", "--label", "Desktop"];
   const imageMarkdown = await run("node", imageArgs, { cwd: output });
   const imageAttachments = await run("node", [formatter, "--attach-list", ...imageArgs.slice(1)], { cwd: output });
   const videoMarkdown = await run("node", [formatter, "--after", "preview.webm", "--label", "Motion"], { cwd: output });
-
   if (!imageMarkdown.includes("| Before (Desktop) | After (Desktop) |")) throw new Error("image table was not generated");
   if (imageAttachments !== "./before.png\n./after.png\n") throw new Error("attachment paths do not match image references");
   if (!videoMarkdown.includes("**Preview (Motion)**\n\n![Preview](./preview.webm)")) throw new Error("video preview was not generated");
 
-  console.log(`Local browser-to-Markdown smoke passed with ${version}: ${output}`);
+  const cadence = video.fps === null ? "ffprobe unavailable, container only" : `${video.frames} frames at ${video.fps} fps`;
+  console.log(`Local browser-to-Markdown smoke passed with ${version} (${cadence}, headers ${headerDropped ? "dropped" : "kept"} after record start): ${output}`);
 } finally {
-  await run(agentBrowser, ["--session", session, "close"]).catch(() => {});
-  await run(agentBrowser, ["--session", `${session}-after`, "close"]).catch(() => {});
+  await before.close();
+  await after.close();
   await new Promise((resolvePromise) => server.close(resolvePromise));
 }
