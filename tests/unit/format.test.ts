@@ -11,6 +11,7 @@ import {
   attachList,
   buildPairs,
   formatMarkdown,
+  formatVideoTables,
   localRef,
   mediaKind,
   replaceMarkedBlock,
@@ -138,6 +139,30 @@ describe('formatMarkdown', () => {
   });
 });
 
+describe('formatVideoTables', () => {
+  it('renders final GitHub attachment URLs as playable table videos', () => {
+    const markdown = formatVideoTables([pair(
+      'https://github.com/user-attachments/assets/before-id',
+      'https://github.com/user-attachments/assets/after-id',
+      'Desktop hero',
+    )]);
+    expect(markdown).toContain('<th>Before (Desktop hero)</th>');
+    expect(markdown).toContain('<th>After (Desktop hero)</th>');
+    expect(markdown).toContain('<video src="https://github.com/user-attachments/assets/before-id" width="100%" controls></video>');
+    expect(markdown).toContain('<video src="https://github.com/user-attachments/assets/after-id" width="100%" controls></video>');
+  });
+
+  it('renders an after-only video table as Preview', () => {
+    const markdown = formatVideoTables([pair(null, 'https://github.com/user-attachments/assets/preview-id')]);
+    expect(markdown).toContain('<th>Preview</th>');
+    expect(markdown).not.toContain('<th>Before</th>');
+  });
+
+  it('rejects non-attachment URLs', () => {
+    expect(() => formatVideoTables([pair(null, 'https://example.com/video.mp4')])).toThrow(/github\.com\/user-attachments/);
+  });
+});
+
 describe('attachList', () => {
   it('returns every file once in publish order', () => {
     expect(attachList([
@@ -217,6 +242,31 @@ describe('format.mjs CLI', () => {
     });
     expect(output).toContain('Keep this prose.');
     expect(output).toContain('**Preview**');
+  });
+
+  it('formats final GitHub video URLs as an HTML table', () => {
+    const cwd = fixture();
+    const script = join(process.cwd(), 'skill/scripts/format.mjs');
+    const output = execFileSync('node', [
+      script,
+      '--before-video-url', 'https://github.com/user-attachments/assets/before-id',
+      '--after-video-url', 'https://github.com/user-attachments/assets/after-id',
+      '--label', 'Desktop hero',
+    ], { cwd, encoding: 'utf8' });
+    expect(output).toContain('<th>Before (Desktop hero)</th>');
+    expect(output).toContain('<video src="https://github.com/user-attachments/assets/after-id" width="100%" controls></video>');
+  });
+
+  it('rejects mixing local files with final video URLs', () => {
+    const cwd = fixture();
+    const script = join(process.cwd(), 'skill/scripts/format.mjs');
+    const result = spawnSync('node', [
+      script,
+      '--after', 'captures/preview.webm',
+      '--after-video-url', 'https://github.com/user-attachments/assets/after-id',
+    ], { cwd, encoding: 'utf8' });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('but not both');
   });
 
   it('fails for missing files', () => {

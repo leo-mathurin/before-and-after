@@ -22,6 +22,19 @@ Use `agent-browser` to create the screenshots or recordings. This skill only own
 
 The formatter supports PNG, JPEG, GIF, WebP, MP4, MOV, and WebM files. Use an `--after` file without a matching `--before` file for a net-new preview.
 
+### Screen recordings
+
+`agent-browser record start` creates a fresh browser context. It preserves cookies and local storage, but an origin-scoped header used to open a protected Vercel Preview may not carry into that new context. Before recording a protected Preview:
+
+1. Load `agent-browser skills get protected-vercel-deployments --full`.
+2. Start the recording context on a blank page.
+3. Apply the authentication method from that skill inside the recording context.
+4. Navigate to the Preview only after authentication is active, then trim the navigation lead-in if necessary.
+
+Do not assume that a page which worked before `record start` will remain authenticated after it.
+
+Agent-browser `0.35.2` and `0.36.0` capture at a hardcoded 10 fps with no CLI or environment override. Inspect the installed version and its recording reference rather than assuming this stays true in later releases. Preserve the source cadence when transcoding: changing the container to 30 or 60 fps only duplicates frames and does not make motion smoother. For animation evidence that requires a higher real frame rate, use a genuinely higher-cadence capture path instead of upsampling agent-browser output.
+
 ### Equal-height image pairs
 
 GitHub vertically centers a shorter image inside a Markdown table cell. For full-page before/after screenshots, make both files the same pixel height so their top edges align:
@@ -57,7 +70,7 @@ node skill/scripts/format.mjs \
   > /tmp/before-and-after.md
 ```
 
-Images render in tables. This first release puts videos on their own lines so `gh --attach` can rewrite local references directly. HTML video tables are possible only after obtaining final GitHub attachment URLs and belong to a separate two-step publishing workflow.
+Images render in tables. Local videos initially render on their own lines so `gh --attach` can upload them and expose their final attachment URLs. Before/after video tables use the two-step workflow below because `gh --attach` does not rewrite local references inside `<video src>` attributes.
 
 ## Publish
 
@@ -90,6 +103,30 @@ Run the formatter and `gh` from the same directory. `gh --attach` uploads the lo
 
 After publishing, fetch or open the PR description and confirm that no `./captures/...` references remain inside the marked block.
 
+### Publish a video table
+
+Video comparisons are a first-class two-step publish operation:
+
+1. Upload the local videos in a temporary PR comment using the normal own-line output and `gh pr comment --attach`.
+2. Fetch that comment through `gh api` and collect the stable `https://github.com/user-attachments/assets/...` URLs in before/after order.
+3. Generate the final HTML table from those URLs and replace the marked PR block:
+
+   ```bash
+   node skill/scripts/format.mjs \
+     --body-file /tmp/pr-body.md \
+     --before-video-url https://github.com/user-attachments/assets/BEFORE_ID \
+     --after-video-url https://github.com/user-attachments/assets/AFTER_ID \
+     --label "Desktop hero" \
+     > /tmp/pr-body-next.md
+
+   gh pr edit "$PR" --body-file /tmp/pr-body-next.md
+   ```
+
+4. Fetch the edited PR body before deleting the temporary comment. Confirm both final URLs are present and no local video paths remain, then delete the comment.
+5. Open the rendered PR and confirm both `<video>` elements are inside the comparison table, reach a playable ready state, and show controls.
+
+If URL extraction, formatting, or PR verification fails, keep the temporary comment so its uploaded attachments remain recoverable and retry from the last successful phase. Use own-line videos as the simple fallback.
+
 Do not publish captures containing Vercel OIDC tokens, bypass secrets, authenticated query parameters, or browser state files.
 
 ## Script contract
@@ -97,6 +134,7 @@ Do not publish captures containing Vercel OIDC tokens, bypass secrets, authentic
 `scripts/format.mjs` is intentionally the only bundled script. It:
 
 - formats existing local media;
+- formats final GitHub video attachment URLs as HTML comparison tables;
 - labels after-only media as `Preview`;
 - emits the exact attachment path list;
 - inserts or replaces `<!-- before-and-after:start/end -->` without changing other PR prose.

@@ -24,6 +24,9 @@ assert(
 );
 assert(!skill.includes("x-vercel-protection-bypass"), "SKILL.md must not duplicate Vercel bypass mechanics");
 assert(!skill.includes("x-vercel-trusted-oidc-idp-token"), "SKILL.md must not duplicate Vercel OIDC mechanics");
+assert(skill.includes("fresh browser context"), "SKILL.md must explain the protected recording-context boundary");
+assert(skill.includes("--after-video-url"), "SKILL.md must document the final-URL video-table phase");
+assert(skill.includes("10 fps"), "SKILL.md must disclose agent-browser's current native recording cadence");
 
 if (failures.length) {
   for (const failure of failures) console.error(`FAIL: ${failure}`);

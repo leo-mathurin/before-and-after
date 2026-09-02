@@ -54,6 +54,19 @@ function imageRef(file, alt, cwd) {
   return `![${alt}](${localRef(file, cwd)})`;
 }
 
+function githubAttachmentUrl(value) {
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error(`Invalid GitHub attachment URL: "${value}"`);
+  }
+  if (url.protocol !== "https:" || url.hostname !== "github.com" || !url.pathname.startsWith("/user-attachments/assets/")) {
+    throw new Error(`Expected a https://github.com/user-attachments/assets/... URL: "${value}"`);
+  }
+  return url.href;
+}
+
 function renderImagePair(pair, cwd, lines) {
   const suffix = heading(pair.label);
   if (pair.before) {
@@ -76,6 +89,17 @@ function renderVideoPair(pair, cwd, lines) {
   lines.push(`**${pair.before ? "After" : "Preview"}${suffix}**`, "", imageRef(pair.after, pair.before ? "After" : "Preview", cwd), "");
 }
 
+function renderVideoTablePair(pair, lines) {
+  const suffix = heading(pair.label);
+  const beforeUrl = pair.before ? githubAttachmentUrl(pair.before) : null;
+  const afterUrl = githubAttachmentUrl(pair.after);
+  lines.push("<table>", "  <tr>");
+  if (beforeUrl) lines.push(`    <th>Before${suffix}</th>`);
+  lines.push(`    <th>${beforeUrl ? "After" : "Preview"}${suffix}</th>`, "  </tr>", "  <tr>");
+  if (beforeUrl) lines.push(`    <td><video src="${beforeUrl}" width="100%" controls></video></td>`);
+  lines.push(`    <td><video src="${afterUrl}" width="100%" controls></video></td>`, "  </tr>", "</table>", "");
+}
+
 export function formatMarkdown(pairs, { attribution, cwd = process.cwd() } = {}) {
   const lines = [MARKER_START];
   if (attribution) lines.push(`> Before/after by ${attribution}`, "");
@@ -90,6 +114,14 @@ export function formatMarkdown(pairs, { attribution, cwd = process.cwd() } = {})
     else renderVideoPair(pair, cwd, lines);
   }
 
+  lines.push(MARKER_END);
+  return `${lines.join("\n").trim()}\n`;
+}
+
+export function formatVideoTables(pairs, { attribution } = {}) {
+  const lines = [MARKER_START];
+  if (attribution) lines.push(`> Before/after by ${attribution}`, "");
+  for (const pair of pairs) renderVideoTablePair(pair, lines);
   lines.push(MARKER_END);
   return `${lines.join("\n").trim()}\n`;
 }
@@ -141,18 +173,31 @@ function main(argv) {
       attribution: { type: "string" },
       "attach-list": { type: "boolean" },
       "body-file": { type: "string" },
+      "before-video-url": { type: "string", multiple: true },
+      "after-video-url": { type: "string", multiple: true },
     },
   });
 
-  const pairs = buildPairs({ before: values.before, after: values.after, labels: values.label });
-  validateFiles(pairs, process.cwd());
+  const localMode = (values.after?.length ?? 0) > 0 || (values.before?.length ?? 0) > 0;
+  const videoTableMode = (values["after-video-url"]?.length ?? 0) > 0 || (values["before-video-url"]?.length ?? 0) > 0;
+  if (localMode === videoTableMode) {
+    throw new Error("Provide local --after files or final --after-video-url attachments, but not both");
+  }
+
+  const pairs = videoTableMode
+    ? buildPairs({ before: values["before-video-url"], after: values["after-video-url"], labels: values.label })
+    : buildPairs({ before: values.before, after: values.after, labels: values.label });
+  if (!videoTableMode) validateFiles(pairs, process.cwd());
 
   if (values["attach-list"]) {
+    if (videoTableMode) throw new Error("--attach-list requires local media files");
     process.stdout.write(`${attachList(pairs).join("\n")}\n`);
     return;
   }
 
-  const block = formatMarkdown(pairs, { attribution: values.attribution });
+  const block = videoTableMode
+    ? formatVideoTables(pairs, { attribution: values.attribution })
+    : formatMarkdown(pairs, { attribution: values.attribution });
   if (values["body-file"]) {
     process.stdout.write(replaceMarkedBlock(readFileSync(values["body-file"], "utf-8"), block));
   } else {
