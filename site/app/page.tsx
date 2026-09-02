@@ -7,7 +7,7 @@ export default function Page() {
     <div className="min-h-screen bg-[#F3F3F3] text-neutral-500">
       <main className="py-10 sm:py-16">
         <div className="max-w-[540px] mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-8">
             <a
               href="/before-and-after"
               className="text-neutral-800 hover:text-neutral-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2 rounded-sm"
@@ -16,13 +16,8 @@ export default function Page() {
                 <Logo />
               </h1>
             </a>
-            <nav className="flex items-center gap-2.5 sm:gap-4 text-[13px] sm:text-sm">
-              <a href="#install" className="text-neutral-500 hover:text-neutral-800 transition-colors">
-                Install
-              </a>
-              <a href="#workflow" className="text-neutral-500 hover:text-neutral-800 transition-colors">
-                Workflow
-              </a>
+            <nav className="flex items-center gap-3 text-[13px] sm:text-sm">
+              <span className="font-mono text-[11px] font-medium text-neutral-900">v0.1.0</span>
               <a
                 href="https://github.com/vercel-labs/before-and-after"
                 target="_blank"
@@ -45,73 +40,56 @@ export default function Page() {
               </a>
             </nav>
           </div>
-          <p className="mb-8 sm:mb-12 text-[14px] sm:text-[15px]">
-            An agent skill that attaches screenshots and screen recordings to pull request descriptions.
-          </p>
+          <div className="mb-8 sm:mb-12 space-y-4">
+            <p className="text-[14px] sm:text-[15px]">
+              <span className="font-medium text-neutral-800">
+                Put visual proof in every pull request.
+              </span>{" "}
+              Teach coding agents to show their work with before and after screenshots and video. Access protected
+              preview deployments and format every capture for GitHub.
+            </p>
+            <Code>npx skills add vercel-labs/before-and-after</Code>
+          </div>
         </div>
 
-        <div className="mb-10 sm:mb-16 px-8 sm:px-0">
+        <div className="mb-7 sm:mb-[52px] px-8 sm:px-0">
           <AutoPlayHero />
         </div>
 
-        <div className="max-w-[540px] mx-auto px-4 sm:px-6 space-y-8 sm:space-y-10">
-          <section id="install" className="scroll-mt-8 space-y-3">
-            <h2 className="text-neutral-800">Install</h2>
-            <p className="text-sm">Add the skill to your agent environment.</p>
-            <Code>npx skills add vercel-labs/before-and-after</Code>
-          </section>
-
-          <hr className="border-neutral-100" />
-
-          <section className="space-y-3">
-            <h2 className="text-neutral-800">Skill First</h2>
-            <p className="text-sm">
-              Browser navigation, authentication, screenshots, and recordings stay with the version-matched
-              skills bundled in <code className="text-neutral-800 bg-neutral-50 px-1 py-0.5 rounded">agent-browser</code>.
-              Before and after only formats existing local media and publishes it through{" "}
-              <code className="text-neutral-800 bg-neutral-50 px-1 py-0.5 rounded">gh --attach</code>.
-            </p>
-          </section>
-
-          <hr className="border-neutral-100" />
-
-          <section id="workflow" className="scroll-mt-8 space-y-6">
-            <h2 className="text-neutral-800">Workflow</h2>
-
-            <div className="space-y-2">
-              <p className="text-sm">Capture media with agent-browser.</p>
-              <Code>agent-browser screenshot captures/after.png</Code>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm">Format a before and after pair.</p>
-              <Code>node skill/scripts/format.mjs --before captures/before.png --after captures/after.png</Code>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm">Use after-only media for a net-new preview.</p>
-              <Code>node skill/scripts/format.mjs --after captures/new-page.png</Code>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm">Publish with GitHub-hosted attachments.</p>
-              <Code>gh pr edit 13 --body-file body.md --attach ./captures/after.png</Code>
-              <p className="text-sm mt-3">
-                GitHub uploads the media to its own CDN and rewrites matching local references in the PR body.
-              </p>
-            </div>
-          </section>
+        <div className="max-w-[540px] mx-auto px-4 sm:px-6">
+          <p className="text-[14px] sm:text-[15px]">
+            Browser navigation, authentication, and capture stay with the version-matched skills bundled in{" "}
+            <code className="font-mono text-[12px] sm:text-[14px] text-[#6f42c1] bg-neutral-50 px-1 py-0.5 rounded">
+              agent-browser
+            </code>
+            ; before and after formats the media and publishes it through{" "}
+            <code className="font-mono text-[12px] sm:text-[14px] bg-neutral-50 px-1 py-0.5 rounded">
+              <span className="text-[#6f42c1]">gh</span>{" "}
+              <span className="text-[#2b5581]">--attach</span>
+            </code>
+            .
+          </p>
         </div>
 
-        <footer className="max-w-[540px] mx-auto px-4 sm:px-6 mt-10 sm:mt-16 pt-6 sm:pt-8 border-t border-neutral-100">
+        <footer className="max-w-[540px] mx-auto px-4 sm:px-6 mt-6 sm:mt-12 pt-6 sm:pt-8 border-t border-neutral-100">
           <p className="text-sm text-neutral-500 flex flex-col items-center gap-2 sm:flex-row sm:justify-between w-full">
+            <span>
+              Uses{" "}
+              <a
+                href="https://agentbrowser.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-neutral-900 hover:underline"
+              >
+                agent-browser <span className="text-[9px] relative -top-px">▲</span>
+              </a>
+            </span>
             <span className="inline-flex items-center gap-1.5">
-              Made by{" "}
               <a
                 href="https://x.com/jamesvclements"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-neutral-800 hover:underline inline-flex items-center gap-1"
+                className="font-medium text-neutral-900 hover:underline inline-flex items-center gap-1"
               >
                 <img
                   src="https://avatars.githubusercontent.com/u/20052710?v=4"
@@ -120,18 +98,7 @@ export default function Page() {
                   height={14}
                   className="w-3.5 h-3.5 rounded-full"
                 />
-                James Clements
-              </a>
-            </span>
-            <span>
-              Uses{" "}
-              <a
-                href="https://agentbrowser.dev"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-neutral-800 hover:underline"
-              >
-                agent-browser <span className="text-[9px] relative -top-px">▲</span>
+                James
               </a>
             </span>
           </p>
