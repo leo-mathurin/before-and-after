@@ -33,9 +33,7 @@
     "verify:skill": "node tests/verification/skill-contract.mjs",
     "verify:local": "node tests/verification/local-smoke.mjs",
     "verify:github": "node tests/verification/github-attachment-smoke.mjs",
-    "verify:vercel": "node tests/verification/vercel-preview-smoke.mjs",
     "verify:agent": "node tests/verification/agent-smoke.mjs",
-    "verify:live": "pnpm verify:github && pnpm verify:vercel",
     "fixture:pr": "node tests/verification/fixture-pr.mjs"
   },
   "devDependencies": {

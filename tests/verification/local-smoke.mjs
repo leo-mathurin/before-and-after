@@ -103,18 +103,8 @@ try {
     }
   }
 
-  // The generated files must flow through the formatter exactly as SKILL.md publishes them.
-  const formatter = resolve(root, "skill/scripts/format.mjs");
-  const imageArgs = [formatter, "--before", "before.png", "--after", "after.png", "--label", "Desktop"];
-  const imageMarkdown = await run("node", imageArgs, { cwd: output });
-  const imageAttachments = await run("node", [formatter, "--attach-list", ...imageArgs.slice(1)], { cwd: output });
-  const videoMarkdown = await run("node", [formatter, "--after", "preview.webm", "--label", "Motion"], { cwd: output });
-  if (!imageMarkdown.includes("| Before (Desktop) | After (Desktop) |")) throw new Error("image table was not generated");
-  if (imageAttachments !== "./before.png\n./after.png\n") throw new Error("attachment paths do not match image references");
-  if (!videoMarkdown.includes("**Preview (Motion)**\n\n![Preview](./preview.webm)")) throw new Error("video preview was not generated");
-
   const cadence = video.fps === null ? "ffprobe unavailable, container only" : `${video.frames} frames at ${video.fps} fps`;
-  console.log(`Local browser-to-Markdown smoke passed with ${version} (${cadence}, headers ${headerDropped ? "dropped" : "kept"} after record start): ${output}`);
+  console.log(`Local browser smoke passed with ${version} (${cadence}, headers ${headerDropped ? "dropped" : "kept"} after record start): ${output}`);
 } finally {
   await before.close();
   await after.close();

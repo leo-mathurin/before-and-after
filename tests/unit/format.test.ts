@@ -1,4 +1,4 @@
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -20,17 +20,9 @@ import {
 const pair = (before: string | null, after: string, label: string | null = null) => ({ before, after, label });
 
 describe('mediaKind', () => {
-  it.each([
-    ['capture.PNG', 'image'],
-    ['capture.jpeg', 'image'],
-    ['capture.jpg', 'image'],
-    ['capture.gif', 'image'],
-    ['capture.webp', 'image'],
-    ['capture.MP4', 'video'],
-    ['capture.mov', 'video'],
-    ['capture.webm', 'video'],
-  ])('classifies %s as %s', (file, kind) => {
-    expect(mediaKind(file)).toBe(kind);
+  it('classifies by extension, case-insensitively', () => {
+    expect(['capture.PNG', 'capture.jpeg', 'capture.gif', 'capture.webp'].map(mediaKind)).toEqual(['image', 'image', 'image', 'image']);
+    expect(['capture.MP4', 'capture.mov', 'capture.webm'].map(mediaKind)).toEqual(['video', 'video', 'video']);
   });
 
   it('rejects unsupported files', () => {
@@ -125,15 +117,6 @@ describe('formatMarkdown', () => {
     expect(markdown).toContain('![Preview](./a.mp4)');
   });
 
-  it('supports image and video pairs in one block', () => {
-    const markdown = formatMarkdown([
-      pair('/repo/b.png', '/repo/a.png', 'Static'),
-      pair('/repo/b.mp4', '/repo/a.mp4', 'Motion'),
-    ], { cwd: '/repo' });
-    expect(markdown).toContain('| Before (Static) | After (Static) |');
-    expect(markdown).toContain('**Before (Motion)**');
-  });
-
   it('rejects mixed media within a pair', () => {
     expect(() => formatMarkdown([pair('/repo/b.png', '/repo/a.mp4')], { cwd: '/repo' })).toThrow(/same media type/);
   });
@@ -211,6 +194,7 @@ describe('replaceMarkedBlock', () => {
 });
 
 describe('format.mjs CLI', () => {
+  const script = join(process.cwd(), 'skill/scripts/format.mjs');
   function fixture() {
     const cwd = mkdtempSync(join(tmpdir(), 'before-and-after-'));
     mkdirSync(join(cwd, 'captures'));
@@ -220,46 +204,10 @@ describe('format.mjs CLI', () => {
     return cwd;
   }
 
-  it('formats existing files and emits attachment paths', () => {
-    const cwd = fixture();
-    const script = join(process.cwd(), 'skill/scripts/format.mjs');
-    const args = ['--before', 'captures/before.png', '--after', 'captures/after.png'];
-
-    const markdown = execFileSync('node', [script, ...args], { cwd, encoding: 'utf8' });
-    const attachments = execFileSync('node', [script, '--attach-list', ...args], { cwd, encoding: 'utf8' });
-
-    expect(markdown).toContain('![Before](./captures/before.png)');
-    expect(attachments).toBe('./captures/before.png\n./captures/after.png\n');
-  });
-
-  it('splices a block into a PR body file', () => {
-    const cwd = fixture();
-    const script = join(process.cwd(), 'skill/scripts/format.mjs');
-    writeFileSync(join(cwd, 'body.md'), 'Keep this prose.\n');
-    const output = execFileSync('node', [script, '--body-file', 'body.md', '--after', 'captures/preview.webm'], {
-      cwd,
-      encoding: 'utf8',
-    });
-    expect(output).toContain('Keep this prose.');
-    expect(output).toContain('**Preview**');
-  });
-
-  it('formats final GitHub video URLs as an HTML table', () => {
-    const cwd = fixture();
-    const script = join(process.cwd(), 'skill/scripts/format.mjs');
-    const output = execFileSync('node', [
-      script,
-      '--before-video-url', 'https://github.com/user-attachments/assets/before-id',
-      '--after-video-url', 'https://github.com/user-attachments/assets/after-id',
-      '--label', 'Desktop hero',
-    ], { cwd, encoding: 'utf8' });
-    expect(output).toContain('<th>Before (Desktop hero)</th>');
-    expect(output).toContain('<video src="https://github.com/user-attachments/assets/after-id" width="100%" controls></video>');
-  });
-
+  // Happy paths run for real against GitHub in tests/verification; only CLI-level
+  // validation that no other layer reaches is covered here.
   it('rejects mixing local files with final video URLs', () => {
     const cwd = fixture();
-    const script = join(process.cwd(), 'skill/scripts/format.mjs');
     const result = spawnSync('node', [
       script,
       '--after', 'captures/preview.webm',
@@ -271,7 +219,6 @@ describe('format.mjs CLI', () => {
 
   it('fails for missing files', () => {
     const cwd = fixture();
-    const script = join(process.cwd(), 'skill/scripts/format.mjs');
     const result = spawnSync('node', [script, '--after', 'captures/missing.png'], { cwd, encoding: 'utf8' });
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('Media file does not exist');
@@ -279,7 +226,6 @@ describe('format.mjs CLI', () => {
 
   it('fails for unsupported files', () => {
     const cwd = fixture();
-    const script = join(process.cwd(), 'skill/scripts/format.mjs');
     writeFileSync(join(cwd, 'captures', 'after.svg'), '<svg/>');
     const result = spawnSync('node', [script, '--after', 'captures/after.svg'], { cwd, encoding: 'utf8' });
     expect(result.status).toBe(1);

@@ -1,8 +1,8 @@
 # before-and-after
 
-An agent skill for attaching existing screenshots and screen recordings to GitHub pull request descriptions.
+An agent skill that attaches existing screenshots and screen recordings to a GitHub pull request as a before/after block.
 
-The skill delegates browser navigation, authentication, screenshots, and recordings to the version-matched skills bundled with [agent-browser](https://agentbrowser.dev). Its only script formats local media for `gh --attach` and safely replaces a marked block in the PR body.
+Browser work belongs to [agent-browser](https://agentbrowser.dev) and its bundled skills. Uploads belong to `gh --attach`. This skill owns the workflow between them and one dependency-free script that formats media and replaces a marked block in the PR body.
 
 ![before-and-after](https://jm.sv/before-and-after/opengraph-image.png)
 
@@ -12,46 +12,31 @@ The skill delegates browser navigation, authentication, screenshots, and recordi
 npx skills add vercel-labs/before-and-after
 ```
 
-Requirements:
+Requires `agent-browser` and GitHub CLI 2.99+ (for `gh --attach`).
 
-- `agent-browser` for producing media;
-- GitHub CLI 2.99 or newer for `gh --attach`.
+## What it produces
 
-## What it adds
+- Side-by-side image tables for before/after pairs, with equal-height full-page captures so tops align.
+- `Preview` blocks for after-only media.
+- Own-line videos that GitHub renders as players, and a two-step HTML video table once attachment URLs exist.
+- Idempotent replacement of one `<!-- before-and-after:start/end -->` block; the rest of the PR description is untouched.
 
-- Side-by-side image tables for before/after pairs.
-- `Preview` output for after-only media.
-- Own-line video attachments that GitHub renders as inline players.
-- Repeatable labels for multiple captures.
-- Idempotent marker replacement that preserves the rest of the PR description.
-- Exact local attachment paths for `gh pr edit --attach`.
-
-## Example
-
-After capturing files with `agent-browser`:
-
-```bash
-node skill/scripts/format.mjs \
-  --before captures/before.png \
-  --after captures/after.png \
-  > /tmp/block.md
-
-node skill/scripts/format.mjs \
-  --attach-list \
-  --before captures/before.png \
-  --after captures/after.png
-```
-
-See `skill/SKILL.md` for the complete PR publishing workflow.
+See `skill/SKILL.md` for the workflow.
 
 ## Verification
 
-```bash
-pnpm verify
-```
+Each layer answers one question. Details in `VERIFICATION.md`.
 
-This runs the formatter unit tests, the skill/package contract, and a local `agent-browser` smoke. `pnpm verify:github` publishes to a permanent fixture PR and checks the rendered result in a browser; `pnpm verify:agent` runs Claude Code against SKILL.md headlessly and grades the resulting PR. See `VERIFICATION.md` for what each layer proves.
+| Command | Runs | Proves | Needs |
+|---|---|---|---|
+| `pnpm test` | CI, every PR | `format.mjs` markup and marker replacement, including error paths | nothing |
+| `pnpm verify:skill` | CI, every PR | package ships only `skill/`; every `--flag` in SKILL.md exists in `format.mjs` and vice versa | `npm` |
+| `pnpm verify:local` | CI, every PR | with the installed agent-browser: the padding recipe yields equal-height pairs, the recorder produces real frames at the stated fps, `record start` drops headers as SKILL.md warns | `agent-browser`, `ffprobe` |
+| `pnpm verify:github` | CI weekly and on non-fork PRs once `FIXTURE_GITHUB_TOKEN` is set; local otherwise | GitHub renders what SKILL.md claims (cell mapping, top alignment, playable video) and the exact `gh pr edit --attach` publish sequence works, twice, preserving prose | `gh`, `agent-browser`, fixture PR |
+| `pnpm verify:agent` | local, before releases | Claude Code following SKILL.md unassisted produces a correct PR | `claude`, ~$2 |
+
+`pnpm verify` runs the first three.
 
 ## Scope
 
-This package deliberately does not wrap `agent-browser`, capture URLs, manage Vercel authentication, convert videos, or host media. Those capabilities belong to their source tools.
+Does not wrap `agent-browser`, capture URLs, manage Vercel authentication, convert video, or host media.

@@ -1,45 +1,31 @@
 # AGENTS.md
 
-Guidelines for AI agents working on this project.
-
-## Project Overview
-
-before-and-after is an agent skill for attaching screenshots and screen recordings to GitHub pull request descriptions. Browser operation belongs to `agent-browser`; this project owns only the skill instructions and deterministic GitHub attachment formatting.
-
-## Directory Structure
+before-and-after is an agent skill that attaches screenshots and recordings to GitHub PR descriptions. Browser work belongs to `agent-browser`; uploads belong to `gh --attach`. This repo owns `skill/SKILL.md`, one formatter script, and the verification that proves they work.
 
 ```text
-before-and-after/
-├── skill/
-│   ├── SKILL.md
-│   └── scripts/
-│       └── format.mjs
-├── tests/unit/
-├── site/
-├── package.json
-└── pnpm-workspace.yaml
+skill/SKILL.md             the product
+skill/scripts/format.mjs   the only shipped script (node builtins only)
+tests/unit/                formatter invariants
+tests/verification/        contract, browser, GitHub, and agent smokes (see VERIFICATION.md)
+site/                      jm.sv/before-and-after
 ```
 
 ## Rules
 
-1. Do not add browser automation, Vercel authentication, screenshot capture, recording, video conversion, or media hosting. Delegate those to their source tools and bundled skills.
-2. Keep `skill/scripts/` dependency-free. Node builtins only.
-3. Keep the skill narrow. The first release formats media the agent already produced and publishes it through `gh --attach`.
-4. Script arguments version with `SKILL.md`; update both together and do not add compatibility shims.
-5. Preserve GitHub rendering invariants: images may use tables; attachment videos must remain on their own lines.
-6. Preserve PR prose outside `<!-- before-and-after:start/end -->`.
+1. Do not add browser automation, Vercel authentication, capture, recording, video conversion, or media hosting. Delegate to the source tools.
+2. `skill/scripts/` stays dependency-free and single-file.
+3. Formatter flags version with `SKILL.md`. Update both; `pnpm verify:skill` enforces it. No compatibility shims.
+4. Images may use tables. Local videos stay on their own lines; video tables only take final `user-attachments` URLs.
+5. Never touch PR prose outside `<!-- before-and-after:start/end -->`.
+6. Verify behaviour, not wording. A claim about GitHub or agent-browser belongs in a smoke that would fail if it stopped being true.
+7. Keep the fixture PR (`verification-fixture` branch) open. Never merge it.
 
-## Testing
-
-```bash
-pnpm test
-pnpm pack --dry-run
-```
-
-## Development
+## Commands
 
 ```bash
-pnpm install
+pnpm verify                                     # unit + contract + local browser smoke
+VERIFY_GITHUB_MUTATION=1 pnpm verify:github     # live, against the fixture PR
+VERIFY_GITHUB_MUTATION=1 VERIFY_AGENT=1 pnpm verify:agent
 cd site && pnpm dev
 ```
 

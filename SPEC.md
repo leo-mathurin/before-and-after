@@ -1,53 +1,37 @@
 # Product spec
 
-`before-and-after` is an agent skill for adding visual evidence to GitHub pull request descriptions. It should compose existing tools rather than recreate them.
+`before-and-after` is an agent skill for adding visual evidence to GitHub pull request descriptions. It composes existing tools rather than recreating them.
 
-## Product boundary
+## Boundary
 
-- `agent-browser` owns navigation, authentication, page state, screenshots, and recordings.
-- Vercel's version-matched `protected-vercel-deployments` skill owns protected Preview access.
+- `agent-browser` owns navigation, authentication, page state, screenshots, and recordings; its bundled `protected-vercel-deployments` skill owns protected Preview access.
 - GitHub CLI owns attachment upload and local-reference rewriting.
-- This skill owns the workflow between those tools, deterministic PR markup, safe marker replacement, and verification of the published result.
+- This skill owns the workflow between them, deterministic PR markup, marker replacement, and verification of the published result.
 
-The package must remain usable from a raw skill checkout without installing dependencies. Browser or capture decisions belong in skill instructions unless repeated deterministic logic clearly earns a zero-dependency helper.
+The skill must work from a raw checkout with no dependencies. Capture decisions live in `SKILL.md` unless repeated deterministic logic clearly earns a zero-dependency helper.
 
 ## Release 1: skill-first foundation
 
-Status: in progress on PR #5.
-
-- [x] Delegate browser work to the skills bundled with `agent-browser`.
-- [x] Delegate protected Vercel access instead of copying authentication instructions.
-- [x] Format existing image and video files for `gh --attach`.
+- [x] Delegate browser and protected-Preview work to agent-browser's skills.
+- [x] Format existing image and video files for `gh --attach`; before/after and after-only.
 - [x] Preserve unrelated PR prose through a marked replacement block.
-- [x] Support before/after and after-only Preview evidence.
-- [x] Verify local browser capture, protected Preview access, package contents, and real GitHub attachment rewriting.
-- [x] Reject protected Preview routes that reach Vercel `404: NOT_FOUND`.
-- [x] Equalize full-page image-pair heights with bottom-only capture padding so GitHub tables align at the top.
-- [x] Verify the final rendered PR, including loaded media dimensions and the absence of local paths.
+- [x] Equalize full-page pair heights with bottom-only padding so GitHub tables align at the top.
+- [x] Verify the rendered PR in a browser: cell mapping, alignment, playable video, no local paths.
+- [x] Verify a real agent following `SKILL.md` produces a correct PR.
 
-### Full-page alignment decision
+### Full-page alignment
 
-GitHub Markdown table cells use `vertical-align: middle`, so screenshots with different heights do not share a top edge. The first-release solution is to extend the shorter page at capture time until both screenshots have equal pixel dimensions.
-
-Constraints:
-
-- Add space only below the page.
-- Transparent padding or the capture tool's default canvas is acceptable.
-- Do not add an image-processing dependency.
-- Prefer same-region captures over padding when the comparison is component-scoped.
-- Treat large height differences as a signal that full-page comparison may be the wrong evidence, not merely a formatting problem.
+GitHub table cells are `vertical-align: middle`, so unequal heights never share a top edge. Extend the shorter page at capture time until both screenshots match: pad below only, no image-processing dependency, prefer same-region captures for component comparisons, and treat a large height gap as a sign that a full-page table is the wrong evidence.
 
 ## Release 2: video tables
 
-- [x] Upload videos first to obtain final GitHub `user-attachments` URLs.
-- [x] Render final URLs in HTML `<video>` elements inside table cells.
-- [x] Make the two-step publish flow retryable without leaving broken PR markup.
-- [x] Verify playback, controls, layout, and cleanup in a disposable PR fixture.
-- [x] Preserve own-line video attachments as the simple fallback.
+- [x] Upload videos first to obtain final `user-attachments` URLs, then render them in HTML `<video>` table cells.
+- [x] Keep the two-step publish retryable without leaving broken markup; own-line videos remain the fallback.
+- [x] Verify playback, controls, layout, and cleanup against the fixture PR.
 
 ## Release 3: capture intelligence
 
-The skill should eventually decide what evidence best proves the change, then iterate until the evidence is valid and persuasive.
+The skill decides what evidence best proves the change, then iterates until it is valid and persuasive.
 
 ### Target discovery
 
@@ -105,4 +89,4 @@ The skill should eventually decide what evidence best proves the change, then it
 6. Publish only after the local media passes.
 7. Inspect the rendered PR and repeat if GitHub changes the presentation.
 
-Future intelligence should be evaluated with scenario fixtures and independent agent runs, not tests that merely assert specific prose.
+Evaluate this with scenario fixtures and independent agent runs, not tests that assert prose.
