@@ -18,7 +18,7 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { ATTACHMENT_URL, agentBrowserSession, evalUntil, gh, makePng, root, run } from "./lib.mjs";
+import { ATTACHMENT_URL, agentBrowserSession, evalUntil, gh, makePng, requireGhAttach, root, run } from "./lib.mjs";
 import { ensureFixturePr, repositoryFromEnv } from "./fixture-pr.mjs";
 
 if (process.env.VERIFY_GITHUB_MUTATION !== "1") {
@@ -26,6 +26,7 @@ if (process.env.VERIFY_GITHUB_MUTATION !== "1") {
   process.exit(1);
 }
 
+requireGhAttach();
 const repository = repositoryFromEnv();
 const fixture = ensureFixturePr(repository);
 const pr = String(fixture.number);

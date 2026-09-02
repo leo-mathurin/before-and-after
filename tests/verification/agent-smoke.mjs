@@ -15,7 +15,7 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { ATTACHMENT_URL, gh, hasBinary, makePng, root } from "./lib.mjs";
+import { ATTACHMENT_URL, gh, hasBinary, makePng, requireGhAttach, root } from "./lib.mjs";
 import { ensureFixturePr, repositoryFromEnv } from "./fixture-pr.mjs";
 
 if (process.env.VERIFY_GITHUB_MUTATION !== "1" || process.env.VERIFY_AGENT !== "1") {
@@ -27,6 +27,7 @@ if (!hasBinary("claude")) {
   process.exit(1);
 }
 
+requireGhAttach();
 const repository = repositoryFromEnv();
 const fixture = ensureFixturePr(repository);
 const pr = String(fixture.number);

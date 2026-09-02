@@ -78,6 +78,16 @@ export function gh(args, { cwd = root, input } = {}) {
   return result.stdout;
 }
 
+/** `--attach` arrived in gh 2.8x; older installs fail with "unknown flag" mid-run. */
+export function requireGhAttach() {
+  const help = spawnSync("gh", ["pr", "comment", "--help"], { encoding: "utf8" });
+  if (help.status !== 0) throw new Error("gh is not installed or not authenticated");
+  if (!help.stdout.includes("--attach")) {
+    const version = spawnSync("gh", ["--version"], { encoding: "utf8" }).stdout.split("\n")[0];
+    throw new Error(`${version} does not support --attach; upgrade GitHub CLI`);
+  }
+}
+
 export function pngDimensions(file) {
   const header = readFileSync(file).subarray(0, 24);
   return { width: header.readUInt32BE(16), height: header.readUInt32BE(20) };
