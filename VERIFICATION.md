@@ -24,13 +24,13 @@ It proves:
 Use this repository's own Preview deployment as the normal live fixture. One project is sufficient for the skill-first release because Vercel authentication mechanics belong to the bundled `protected-vercel-deployments` skill, not this skill.
 
 ```bash
-VERCEL_PREVIEW_URL=https://example.vercel.app \
+VERCEL_PREVIEW_URL=https://example.vercel.app/exact-page-path \
 VERCEL_PROJECT=before-and-after \
 VERCEL_SCOPE=vercel \
 pnpm verify:vercel
 ```
 
-The probe mints a short-lived development OIDC token with Vercel CLI, opens the protected Preview with the header prescribed by the installed `agent-browser` skill, captures a screenshot, and rejects a Vercel login page. It never prints or persists the token.
+The probe mints a short-lived development OIDC token with Vercel CLI, opens the exact protected Preview route with the header prescribed by the installed `agent-browser` skill, captures a screenshot, and rejects both Vercel login pages and platform `404: NOT_FOUND` responses. It never prints or persists the token.
 
 Do not create separate applications for SSO, Passport, static bypass secrets, production mappings, or cross-team Trusted Sources in this release. Those are upstream protection modes. Add dedicated projects only when this skill starts owning protection behavior or when an upstream regression cannot be reproduced with the same-project Preview fixture.
 

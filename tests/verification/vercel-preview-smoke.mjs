@@ -49,7 +49,11 @@ try {
   await run(agentBrowser, ["--session", session, "open", VERCEL_PREVIEW_URL, "--headers", headers]);
   const title = await run(agentBrowser, ["--session", session, "get", "title"], { capture: true });
   const url = await run(agentBrowser, ["--session", session, "get", "url"], { capture: true });
+  const body = await run(agentBrowser, ["--session", session, "get", "text", "body"], { capture: true });
   if (/vercel.*login|log in.*vercel/i.test(`${title} ${url}`)) throw new Error("Preview resolved to a Vercel login page");
+  if (/^404:\s*NOT_FOUND$/im.test(title) || /Code:\s*NOT_FOUND/i.test(body)) {
+    throw new Error(`Preview reached Vercel but the requested route does not exist: ${url}`);
+  }
   await run(agentBrowser, ["--session", session, "screenshot", screenshot]);
   if (statSync(screenshot).size === 0) throw new Error("Preview screenshot is empty");
   console.log(`Protected Preview smoke passed: ${output}`);
