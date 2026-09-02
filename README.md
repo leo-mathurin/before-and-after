@@ -50,7 +50,7 @@ See `skill/SKILL.md` for the complete PR publishing workflow.
 pnpm verify
 ```
 
-This runs the deterministic formatter tests, validates the skill boundary, and uses the installed `agent-browser` to capture and format this repository's local fixtures. Protected Vercel and real GitHub attachment checks are opt-in release probes; see `VERIFICATION.md`.
+This runs the formatter unit tests, the skill/package contract, and a local `agent-browser` smoke. `pnpm verify:github` publishes to a permanent fixture PR and checks the rendered result in a browser; `pnpm verify:agent` runs Claude Code against SKILL.md headlessly and grades the resulting PR. See `VERIFICATION.md` for what each layer proves.
 
 ## Scope
 

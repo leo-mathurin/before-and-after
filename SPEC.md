@@ -23,7 +23,7 @@ Status: in progress on PR #5.
 - [x] Verify local browser capture, protected Preview access, package contents, and real GitHub attachment rewriting.
 - [x] Reject protected Preview routes that reach Vercel `404: NOT_FOUND`.
 - [x] Equalize full-page image-pair heights with bottom-only capture padding so GitHub tables align at the top.
-- [ ] Verify the final rendered PR, including loaded media dimensions and the absence of local paths.
+- [x] Verify the final rendered PR, including loaded media dimensions and the absence of local paths.
 
 ### Full-page alignment decision
 
@@ -42,7 +42,7 @@ Constraints:
 - [x] Upload videos first to obtain final GitHub `user-attachments` URLs.
 - [x] Render final URLs in HTML `<video>` elements inside table cells.
 - [x] Make the two-step publish flow retryable without leaving broken PR markup.
-- [ ] Verify playback, controls, layout, and cleanup in a disposable PR fixture.
+- [x] Verify playback, controls, layout, and cleanup in a disposable PR fixture.
 - [x] Preserve own-line video attachments as the simple fallback.
 
 ## Release 3: capture intelligence

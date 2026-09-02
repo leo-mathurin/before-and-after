@@ -1,58 +1,77 @@
 # Verification
 
-The skill-first release has three verification layers. The default suite is safe, local, and repeatable. Live Vercel and GitHub checks are explicit because they depend on external identity or mutate a pull request temporarily.
+Each layer answers one question. The default suite is local and repeatable; the live layers mutate a dedicated fixture PR and restore it.
 
-## Release gate
+| Command | Question it answers | Needs |
+|---|---|---|
+| `pnpm test` | Does `format.mjs` emit the right markup and replace only the marked block? | nothing |
+| `pnpm verify:skill` | Does the package ship only the skill, and do SKILL.md and `format.mjs` agree on every flag? | `npm` |
+| `pnpm verify:local` | Does the installed `agent-browser` produce equal-height full-page pairs and a decodable recording, and are SKILL.md's claims about it still true? | `agent-browser`, optional `ffprobe` |
+| `pnpm verify:github` | Does GitHub render what SKILL.md says it renders, and do the exact publish commands work on a real PR? | `gh` with write access, `agent-browser` |
+| `pnpm verify:vercel` | Can a protected Preview be opened with the bundled Vercel skill's method? | `vercel` ≥ 53.3, `agent-browser` |
+| `pnpm verify:agent` | Does a real agent following SKILL.md end up with a correct PR? | `claude`, `gh`, model spend |
 
-Run before every release:
+`pnpm verify` runs the first three. `pnpm verify:live` runs the GitHub and Vercel probes. CI runs `pnpm verify` on every push and PR, and the GitHub probe on non-fork PRs and a weekly schedule so GitHub rendering drift is caught even when nothing changes here.
+
+## What each layer actually checks
+
+### Local browser smoke
+
+Follows the "Equal-height image pairs" steps from SKILL.md against a fixture server and asserts the two `--full` screenshots have identical pixel dimensions and extend past the viewport. Records a short clip and, when `ffprobe` is available, asserts it decodes to real frames and that SKILL.md's stated recorder cadence matches the observed frame rate. Also verifies SKILL.md's recording-context warning empirically: the fixture server records whether a custom header survives `record start`, and the run fails if headers are dropped while the warning is missing (or notes that the caveat may be stale if they are kept).
+
+### Skill contract
+
+Package boundary (`skill/scripts` contains only `format.mjs`, no `bin`, no runtime dependencies, `npm pack` publishes nothing outside `skill/`), delegation boundary (capture and Vercel auth go to `agent-browser`'s own skills), and a docs-to-CLI contract: every `--flag` shown in SKILL.md must exist in `format.mjs`, and every flag `format.mjs` accepts must be documented. It deliberately does not assert on sentences.
+
+### GitHub smoke
+
+Uses the permanent fixture PR (see below). Phase A posts two disposable comments with generated fixtures whose dimensions differ, then opens the rendered comment in a browser and asserts:
+
+- every local reference was rewritten and each table cell shows the asset that was uploaded for it (catches swapped pairs);
+- equal-height images share a top edge, and unequal-height images do not (this is the evidence for the padding guidance; if GitHub stops vertically centring cells, the run fails and tells you the guidance is obsolete);
+- an own-line video renders as a player with controls.
+
+Phase B runs the publish commands exactly as SKILL.md writes them against the fixture description: `gh pr edit --body-file --attach`, a second identical publish (block replaced in place, not duplicated or moved), then the two-step video table. Prose outside the marked block must be byte-identical after every step, and the rendered description's `<video>` must sit inside the table, show controls, and reach a playable ready state. The description is restored and the comments deleted in `finally`.
+
+### Agent smoke
+
+Everything above re-implements the skill's steps in JavaScript, which proves the tools compose but not that SKILL.md leads an agent to compose them. `verify:agent` runs Claude Code headlessly (`claude -p`, `--permission-mode dontAsk`) with two existing captures and the fixture PR number, and grades only the artifact: one marked block, labelled table, two uploaded assets, no local paths, prose untouched. Roughly 6 turns and under a minute. It is opt-in because it spends tokens.
+
+## Fixture PR
+
+`pnpm fixture:pr` finds or creates a draft PR from the `verification-fixture` branch on this repository and prints its number. It is idempotent and also restores the fixture description if a previous run was interrupted. Keep that PR open and never merge it; it exists so the live probes have a real description to edit without opening new PRs.
+
+The repository requires signed commits, so the branch is created through local git (which applies your signing config), not the contents API. Run `pnpm fixture:pr` from a machine with a signing key if the branch ever needs recreating; CI only needs the PR to already exist.
 
 ```bash
-pnpm verify
+VERIFY_GITHUB_MUTATION=1 pnpm verify:github
+VERIFY_GITHUB_MUTATION=1 VERIFY_AGENT=1 pnpm verify:agent
 ```
 
-It proves:
-
-- the skill remains a thin delegation layer around version-matched `agent-browser` instructions;
-- `format.mjs` remains the only shipped script;
-- formatter and marker replacement invariants pass their unit tests;
-- the installed browser can capture screenshots and a recording;
-- those generated files can be formatted into image and video PR blocks;
-- attachment paths exactly match the local references in the generated Markdown.
+Set `FIXTURE_REPO=owner/name` to point at a different repository. Set `KEEP_FIXTURE_COMMENT=1` to leave the disposable comments for inspection.
 
 ## Protected Vercel preview
-
-Use this repository's own Preview deployment as the normal live fixture. One project is sufficient for the skill-first release because Vercel authentication mechanics belong to the bundled `protected-vercel-deployments` skill, not this skill.
 
 ```bash
 VERCEL_PREVIEW_URL=https://example.vercel.app/exact-page-path \
 VERCEL_PROJECT=before-and-after \
-VERCEL_SCOPE=vercel \
+VERCEL_SCOPE=your-team \
+VERCEL_EXPECT_TEXT="some text the page must contain" \
 pnpm verify:vercel
 ```
 
-The probe mints a short-lived development OIDC token with Vercel CLI, opens the exact protected Preview route with the header prescribed by the installed `agent-browser` skill, captures a screenshot, and rejects both Vercel login pages and platform `404: NOT_FOUND` responses. It never prints or persists the token.
-
-Do not create separate applications for SSO, Passport, static bypass secrets, production mappings, or cross-team Trusted Sources in this release. Those are upstream protection modes. Add dedicated projects only when this skill starts owning protection behavior or when an upstream regression cannot be reproduced with the same-project Preview fixture.
-
-## GitHub attachments
-
-The GitHub probe posts a disposable comment to an existing pull request, verifies that GitHub rewrote the local image references to attachment URLs, then deletes the comment.
-
-```bash
-VERIFY_GITHUB_MUTATION=1 PR_NUMBER=5 pnpm verify:github
-```
-
-Use a disposable test PR when possible. The script refuses to mutate GitHub without the explicit opt-in variable and always attempts cleanup.
+Mints a development OIDC token with Vercel CLI, opens the exact route with the header prescribed by the installed `protected-vercel-deployments` skill, and fails if the final URL's origin differs from the deployment (any SSO or login redirect), if the route is a platform `404: NOT_FOUND`, or if the optional expected text is missing. The token is never printed or persisted.
 
 ## Coverage boundary
 
 | Concern | Owner | Verification |
 |---|---|---|
-| Browser navigation, state, screenshots, recording | `agent-browser` | Local smoke against repository fixtures |
-| Same-project protected Preview access | `agent-browser` protected-deployment skill | Opt-in Vercel smoke |
-| Formatting and marker replacement | This skill | Unit tests |
-| `gh --attach` rewriting | GitHub CLI and this skill's markup | Opt-in disposable PR comment |
-| Video tables | Future release | Separate two-step live suite |
-| Choosing persuasive evidence | Future release | Scenario-based agent evaluations |
+| Browser navigation, state, screenshots, recording | `agent-browser` | Local smoke |
+| Protected Preview access | `agent-browser` Vercel skill | Vercel smoke |
+| Formatting and marker replacement | This skill | Unit tests, contract |
+| `gh --attach` rewriting and GitHub rendering | GitHub CLI + this skill's markup | GitHub smoke |
+| Two-step video tables | This skill | GitHub smoke (Phase B) |
+| An agent actually following SKILL.md | This skill | Agent smoke |
+| Choosing persuasive evidence, PR placement | Future release | Scenario-based agent evals |
 
-The suite should test the integration seams this skill owns. It should not duplicate the full compatibility matrix of `agent-browser`, Vercel Deployment Protection, or GitHub CLI.
+The suite tests the seams this skill owns. It does not duplicate the compatibility matrix of `agent-browser`, Vercel Deployment Protection, or GitHub CLI.

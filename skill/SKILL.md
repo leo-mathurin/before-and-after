@@ -70,6 +70,8 @@ node skill/scripts/format.mjs \
   > /tmp/before-and-after.md
 ```
 
+Add `--attribution "<name>"` to prefix the block with a `> Before/after by <name>` line when the PR should credit who produced the evidence.
+
 Images render in tables. Local videos initially render on their own lines so `gh --attach` can upload them and expose their final attachment URLs. Before/after video tables use the two-step workflow below because `gh --attach` does not rewrite local references inside `<video src>` attributes.
 
 ## Publish
