@@ -3,12 +3,6 @@
 @tailwind utilities;
 
 @font-face {
-  font-family: "Geist Local";
-  src: url("/before-and-after/Geist-Regular.otf") format("opentype");
-  font-display: swap;
-}
-
-@font-face {
   font-family: "Vanilla Cream";
   src: url("/before-and-after/VanillaCreamOx-Regular.otf") format("opentype");
   font-display: swap;
@@ -30,7 +24,6 @@
   }
 
   :root {
-    --font-sans: "Geist Local";
     --font-vanilla-cream: "Vanilla Cream";
     --background: 0 0% 100%;
     --foreground: 0 0% 32%;
