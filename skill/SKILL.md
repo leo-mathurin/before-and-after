@@ -9,7 +9,7 @@ You are producing visual proof of a UI change: **before** (the old state — usu
 
 Your judgment does the interesting work: which pages, which section, what UI state, whether the result is good enough to publish. The scripts in `scripts/` handle only what must be deterministic — identical viewports and timing on both sides, video post-processing, and the output format. **They are an optimization, not a cage**: whenever a scenario doesn't fit them, drive the browser with raw `agent-browser` commands and use the scripts only for the pieces that still apply (or none at all).
 
-Requires the `agent-browser` CLI (`npm i -g agent-browser && agent-browser install`), plus `ffmpeg` for video.
+Requires the `agent-browser` CLI (`npm i -g agent-browser && agent-browser install`), plus `ffmpeg` for video. Publishing to GitHub wants `gh` >= 2.99 (`--attach` support).
 
 ## Workflow
 
@@ -42,22 +42,24 @@ Requires the `agent-browser` CLI (`npm i -g agent-browser && agent-browser insta
 
    For a recorded workflow: `record start file.webm` → interact → `record stop`, then convert like capture.mjs does (`ffmpeg -i in.webm -movflags +faststart -pix_fmt yuv420p out.mp4`). Present hand-taken shots directly, or write a `manifest.json` in the same shape if you want the formatter.
 7. **Look at every capture before publishing** (read the image files). Blank frames, error pages, cookie banners, loading spinners, mismatched scroll positions → fix and re-shoot. Never publish a capture you haven't seen.
-8. **Upload** (needed for PR embedding; chat surfaces usually attach files natively):
+8. **Format and publish to GitHub** (`gh` >= 2.99) — no upload step; `--attach` puts the files on GitHub's CDN and rewrites the local references in place:
+
+   ```bash
+   node scripts/format.mjs --manifest captures/manifest.json [--attribution "@your-agent"] [--markers] > block.md
+   # splice block.md into the PR body (inside the markers — never touch prose outside them), then:
+   gh pr edit <n> --body-file body.md $(node scripts/format.mjs --manifest captures/manifest.json --attach-list | sed 's/^/--attach /')
+   ```
+
+   Run `format.mjs` and `gh` from the same directory — the body's `./relative` refs must match the `--attach` paths for the rewrite. Without `--url-map`, the block references local files: images in side-by-side tables; **videos on their own line under a bold label** — GitHub renders own-line attachment videos as inline players but demotes video refs inside table cells to plain links, and never rewrites `<video>` tags. After-only captures render as "Preview". `--markers` wraps the block in `<!-- website-agent:before-after:start/end -->` comments so re-runs replace the section idempotently. Size limits match web uploads: 10 MB images, 100 MB video on paid plans.
+9. **Non-GitHub surfaces** (chat posts natively; anything else needs hosting): upload first, then format in hosted mode:
 
    ```bash
    BLOB_READ_WRITE_TOKEN=... node scripts/upload.mjs --prefix captures/pr-123 captures/*.png captures/*.mp4 > url-map.json
+   node scripts/format.mjs --manifest captures/manifest.json --url-map url-map.json [--markers]
    ```
 
-   Or your environment's own upload mechanism — anything yielding a `{localPath: publicUrl}` JSON map. Avoid public paste-bins for non-public work.
-9. **Format:**
-
-   ```bash
-   node scripts/format.mjs --manifest captures/manifest.json --url-map url-map.json \
-     [--attribution "@your-agent"] [--markers] [--style text]
-   ```
-
-   Emits the canonical block: side-by-side table per viewport; videos as poster frames linked to the mp4 (GitHub cannot inline-play external videos — it only embeds uploads to its own CDN, which has no API); a single "Preview" column when there's no before. `--markers` wraps the block in `<!-- website-agent:before-after:start/end -->` comments so re-runs can replace the section idempotently.
-10. **Publish:** `gh pr edit <n>` splicing inside the markers (never touch prose outside them), or hand the block to whatever posts for you.
+   Hosted videos become poster frames linked to the mp4, because GitHub strips external `<video>` sources. Avoid public paste-bins for non-public work.
+10. **Advanced — video inside a table cell**: possible only with a two-step publish, since it needs the final CDN URL: attach the mp4 once (e.g. `gh pr comment --attach`), copy the rewritten `user-attachments` URL, then edit the body with `<video src="<that-url>"></video>` in the cell. Rarely worth it over the own-line layout.
 
 ## Authentication
 
@@ -77,7 +79,7 @@ Requires the `agent-browser` CLI (`npm i -g agent-browser && agent-browser insta
 | Script | Does |
 |---|---|
 | `capture.mjs` | parity screenshots/video of 1–2 URLs across viewports → files + `manifest.json` |
-| `format.mjs` | manifest + URL map → canonical markdown block (`--style text` for chat) |
+| `format.mjs` | manifest → canonical markdown block: local refs for `gh --attach` by default, `--url-map` for hosted, `--attach-list` for the publish command, `--style text` for chat |
 | `prewarm.mjs` | idempotent daemon + per-viewport session warm-up |
 | `upload.mjs` | files → Vercel Blob (`BLOB_READ_WRITE_TOKEN`) → `{path: url}` map |
 

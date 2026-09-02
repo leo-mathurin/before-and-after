@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — plain .mjs module, no types on purpose (skill-internal interface)
-import { formatMarkdown, formatText } from '../../skill/scripts/format.mjs';
+import { attachList, formatMarkdown, formatText } from '../../skill/scripts/format.mjs';
 
 const image = (file: string, url: string) => ({ file, kind: 'image', url });
 
@@ -85,6 +85,74 @@ describe('formatMarkdown', () => {
     });
     expect(md).toContain('Before (desktop, 1440×900)');
     expect(md).toContain('After (mobile, 375×812)');
+  });
+});
+
+describe('formatMarkdown attach mode (no urlMap)', () => {
+  it('references images by ./relative local path for gh --attach rewriting', () => {
+    const local = {
+      mode: 'image',
+      pairs: [
+        {
+          viewport: { name: 'desktop', width: 1440, height: 900 },
+          before: image(`${process.cwd()}/captures/b.png`, 'x'),
+          after: image(`${process.cwd()}/captures/a.png`, 'y'),
+        },
+      ],
+    };
+    const md = formatMarkdown(local, null);
+    expect(md).toContain('![](./captures/b.png)');
+    expect(md).toContain('| Before | After |');
+  });
+
+  it('puts videos on their own line under labels, never in table cells', () => {
+    const video = {
+      mode: 'video',
+      pairs: [
+        {
+          viewport: { name: 'desktop', width: 1440, height: 900 },
+          before: { file: `${process.cwd()}/captures/b.mp4`, kind: 'video', url: 'x' },
+          after: { file: `${process.cwd()}/captures/a.mp4`, kind: 'video', url: 'y' },
+        },
+      ],
+    };
+    const md = formatMarkdown(video, null);
+    expect(md).toContain('**Before**');
+    expect(md).toContain('![before](./captures/b.mp4)');
+    expect(md).not.toContain('|');
+    expect(md).not.toContain('Click a frame');
+  });
+
+  it('labels after-only video as Preview', () => {
+    const video = {
+      mode: 'video',
+      pairs: [
+        {
+          viewport: { name: 'mobile', width: 375, height: 812 },
+          before: null,
+          after: { file: `${process.cwd()}/a.mp4`, kind: 'video', url: 'y' },
+        },
+      ],
+    };
+    const md = formatMarkdown(video, null);
+    expect(md).toContain('**Preview**');
+    expect(md).not.toContain('Before');
+  });
+});
+
+describe('attachList', () => {
+  it('lists every capture file as a ./relative path', () => {
+    const video = {
+      mode: 'video',
+      pairs: [
+        {
+          viewport: { name: 'desktop', width: 1440, height: 900 },
+          before: { file: `${process.cwd()}/captures/b.mp4`, kind: 'video', url: 'x' },
+          after: { file: `${process.cwd()}/captures/a.mp4`, kind: 'video', url: 'y' },
+        },
+      ],
+    };
+    expect(attachList(video)).toEqual(['./captures/b.mp4', './captures/a.mp4']);
   });
 });
 

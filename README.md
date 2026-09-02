@@ -22,9 +22,9 @@ Requires [agent-browser](https://agentbrowser.dev) (`npm i -g agent-browser && a
 
 - **A judgment guide** (`skill/SKILL.md`): choosing targets, resolving what "before" means, handling net-new pages (after-only "Preview" output), driving stateful UI with raw agent-browser before capturing, verifying captures before publishing, and getting through Vercel deployment protection.
 - **`capture.mjs`** — parity engine: same viewport, wait conditions, and timing on both sides, across any number of viewports; `--record <seconds>` for video (mp4 + poster frame per side).
-- **`format.mjs`** — the canonical PR block: side-by-side tables, poster-frame→mp4 video cells, attribution, idempotent marker comments.
+- **`format.mjs`** — the canonical PR block, built for `gh --attach` (gh ≥ 2.99): image tables and inline-playing videos with zero uploads on GitHub surfaces; hosted mode (poster-frame→mp4 cells) for everywhere else. Attribution, idempotent marker comments, after-only "Preview" mode.
 - **`prewarm.mjs`** — idempotent browser warm-up so the first capture doesn't pay browser launch.
-- **`upload.mjs`** — Vercel Blob uploads via `BLOB_READ_WRITE_TOKEN`, emitting the URL map `format.mjs` consumes.
+- **`upload.mjs`** — Vercel Blob uploads via `BLOB_READ_WRITE_TOKEN` for non-GitHub surfaces, emitting the URL map `format.mjs`'s hosted mode consumes.
 
 ## Quick taste
 
