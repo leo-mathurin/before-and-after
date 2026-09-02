@@ -12,6 +12,6 @@
     "isolatedModules": true,
     "incremental": true
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts"],
+  "include": ["tests/**/*.ts"],
   "exclude": ["node_modules", "site"]
 }

@@ -108,7 +108,7 @@
         <th style="width: 25%">Scenario</th>
         <th style="width: 25%">Before</th>
         <th style="width: 25%">After</th>
-        <th style="width: 25%">CLI Command</th>
+        <th style="width: 25%">Fixture Path</th>
       </tr>
     </thead>
     <tbody>
@@ -226,12 +226,10 @@
 
   <div style="margin-top: 2rem; padding: 1.5rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
     <h2 style="margin-bottom: 1rem; color: #333;">📝 Usage</h2>
-    <p style="margin-bottom: 1rem; color: #666;">To capture screenshots for any scenario, use:</p>
+    <p style="margin-bottom: 1rem; color: #666;">Use agent-browser directly to capture a fixture:</p>
     <div class="command">
-      npx before-and-after \<br>
-      &nbsp;&nbsp;"file://$(pwd)/{scenario}/before.html" \<br>
-      &nbsp;&nbsp;"file://$(pwd)/{scenario}/after.html" \<br>
-      &nbsp;&nbsp;-c
+      agent-browser --allow-file-access open "file://$(pwd)/{scenario}/before.html"<br>
+      agent-browser screenshot captures/before.png
     </div>
     <p style="margin-top: 1rem; color: #666;">Replace <code>{scenario}</code> with the scenario name from the table above.</p>
   </div>

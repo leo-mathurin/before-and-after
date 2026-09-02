@@ -1,7 +1,7 @@
 {
   "name": "@vercel/before-and-after",
-  "version": "0.0.4",
-  "description": "Simple before/after screenshot tool for capturing and comparing web pages",
+  "version": "0.1.0",
+  "description": "Agent skill for attaching before/after screenshots and video to GitHub pull requests",
   "author": "James Clements",
   "license": "PolyForm-Shield-1.0.0",
   "repository": {
@@ -19,36 +19,22 @@
     "comparison",
     "capture",
     "web",
-    "testing",
-    "cli"
+    "agent",
+    "skill"
   ],
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "bin": {
-    "before-and-after": "dist/bin/cli.js"
-  },
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
   "files": [
-    "dist",
     "skill"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.pkg.json",
-    "prepublishOnly": "rm -rf dist && pnpm build && pnpm test:unit",
-    "test": "vitest run",
+    "test": "vitest run tests/unit",
     "test:watch": "vitest",
-    "test:unit": "vitest run tests/unit",
-    "test:browser": "vitest run tests/browser",
-    "test:integration": "vitest run tests/integration"
-  },
-  "peerDependencies": {
-    "agent-browser": "*"
+    "verify": "pnpm test && pnpm verify:skill && pnpm verify:local",
+    "verify:skill": "node tests/verification/skill-contract.mjs",
+    "verify:local": "node tests/verification/local-smoke.mjs",
+    "verify:github": "node tests/verification/github-attachment-smoke.mjs",
+    "verify:agent": "node tests/verification/agent-smoke.mjs",
+    "fixture:pr": "node tests/verification/fixture-pr.mjs"
   },
   "devDependencies": {
     "@types/node": "^22",

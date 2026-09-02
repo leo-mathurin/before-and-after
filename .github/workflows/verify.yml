@@ -1,0 +1,75 @@
+name: Verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1" # weekly: catch GitHub/agent-browser behaviour drift
+
+jobs:
+  local:
+    name: Unit, contract, and local browser smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install agent-browser and ffprobe (external tools, not package dependencies)
+        run: |
+          npm install -g agent-browser
+          agent-browser install --with-deps
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: pnpm verify
+
+  github:
+    name: Live GitHub attachment and rendering smoke
+    # `gh --attach` uploads through an endpoint that rejects the Actions installation
+    # token ("unsupported authentication type"), so this job needs a user PAT with
+    # repo scope in the FIXTURE_GITHUB_TOKEN secret. It skips cleanly without one.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - id: token
+        run: echo "present=${{ secrets.FIXTURE_GITHUB_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+      - if: steps.token.outputs.present != 'true'
+        run: echo "::notice::FIXTURE_GITHUB_TOKEN is not set; skipping the live GitHub smoke."
+      - if: steps.token.outputs.present == 'true'
+        uses: actions/checkout@v4
+      - if: steps.token.outputs.present == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - if: steps.token.outputs.present == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - if: steps.token.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.token.outputs.present == 'true'
+        name: Install agent-browser and ffmpeg (recording needs ffmpeg)
+        run: |
+          npm install -g agent-browser
+          agent-browser install --with-deps
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - if: steps.token.outputs.present == 'true'
+        name: Install current gh (the runner's copy predates --attach)
+        run: |
+          VERSION=$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest | jq -r '.tag_name | ltrimstr("v")')
+          curl -fsSL "https://github.com/cli/cli/releases/download/v${VERSION}/gh_${VERSION}_linux_amd64.tar.gz" | tar xz -C /tmp
+          sudo install "/tmp/gh_${VERSION}_linux_amd64/bin/gh" /usr/local/bin/gh
+          gh --version
+      - if: steps.token.outputs.present == 'true'
+        run: pnpm verify:github
+        env:
+          GH_TOKEN: ${{ secrets.FIXTURE_GITHUB_TOKEN }}
+          VERIFY_GITHUB_MUTATION: "1"
+          FIXTURE_REPO: ${{ github.repository }}

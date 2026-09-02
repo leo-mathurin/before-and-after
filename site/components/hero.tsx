@@ -80,7 +80,7 @@ export function Hero({ state: controlledState, onStateChange, autoPlay = true, i
         <Browser variant="A" url="site.com" />
 
         {/* Browser B */}
-        <Browser variant="B" url="localhost" />
+        <Browser variant="B" url="site-preview.vercel.app" />
 
         {/* GitHub PR spanning both columns */}
         <div className="col-span-2 relative">
@@ -220,7 +220,7 @@ function Capture({ variant, position, opacity = 1, delay = 0, style }: CapturePr
         className="relative rounded-lg border-[3px] border-white overflow-hidden"
         style={{ boxShadow: "0 8px 30px rgba(0,0,0,0.25)" }}
       >
-        <Browser variant={variant} url={variant === "A" ? "site.com" : "localhost"} />
+        <Browser variant={variant} url={variant === "A" ? "site.com" : "site-preview.vercel.app"} />
         {/* Camera flash overlay - white that fades out */}
         <motion.div
           className="absolute inset-0 bg-white rounded-lg pointer-events-none"

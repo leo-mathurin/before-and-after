@@ -3,15 +3,18 @@ export function Logo({ className }: { className?: string }) {
     <div className={`flex items-center gap-1.5 ${className ?? ""}`}>
       <span
         className="font-[family-name:var(--font-vanilla-cream)] text-xl leading-none tracking-wide"
-        style={{ WebkitTextStroke: "0.5px #525252" }}
+        style={{
+          WebkitTextStroke: "0.5px #525252",
+          textShadow: "0.25px 0 #525252, -0.25px 0 #525252",
+        }}
       >
         before
       </span>
       <span className="font-normal text-neutral-600">and</span>
-      <span className="relative font-medium">
+      <span className="relative isolate font-medium text-neutral-900">
         {/* top-left, larger */}
         <svg
-          className="absolute -left-1 -top-1 w-2 h-2 text-neutral-400"
+          className="absolute -left-1 -top-1 -z-10 w-2 h-2 text-neutral-400"
           viewBox="0 0 24 24"
           fill="currentColor"
           aria-hidden="true"
@@ -21,7 +24,7 @@ export function Logo({ className }: { className?: string }) {
         </svg>
         {/* top-right, small */}
         <svg
-          className="absolute -right-0.5 -top-0.5 w-1 h-1 text-neutral-300"
+          className="absolute -right-0.5 -top-0.5 -z-10 w-1 h-1 text-neutral-300"
           viewBox="0 0 24 24"
           fill="currentColor"
           aria-hidden="true"
@@ -31,7 +34,7 @@ export function Logo({ className }: { className?: string }) {
         </svg>
         {/* right side, medium */}
         <svg
-          className="absolute -right-1.5 top-1 w-1.5 h-1.5 text-neutral-400"
+          className="absolute -right-1.5 top-1 -z-10 w-1.5 h-1.5 text-neutral-400"
           viewBox="0 0 24 24"
           fill="currentColor"
           aria-hidden="true"
@@ -41,7 +44,7 @@ export function Logo({ className }: { className?: string }) {
         </svg>
         {/* bottom-left, medium */}
         <svg
-          className="absolute -left-0.5 -bottom-0.5 w-1.5 h-1.5 text-neutral-300"
+          className="absolute -left-0.5 -bottom-0.5 -z-10 w-1.5 h-1.5 text-neutral-300"
           viewBox="0 0 24 24"
           fill="currentColor"
           aria-hidden="true"
@@ -51,7 +54,7 @@ export function Logo({ className }: { className?: string }) {
         </svg>
         {/* bottom-right, tiny */}
         <svg
-          className="absolute right-2 -bottom-1 w-[5px] h-[5px] text-neutral-400"
+          className="absolute right-2 -bottom-1 -z-10 w-[5px] h-[5px] text-neutral-400"
           viewBox="0 0 24 24"
           fill="currentColor"
           aria-hidden="true"
