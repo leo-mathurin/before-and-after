@@ -63,9 +63,29 @@ Requires the `agent-browser` CLI (`npm i -g agent-browser && agent-browser insta
 
 ## Authentication
 
-- **Vercel deployment protection (SSO / Passport):** the project's *automation bypass secret* gets through. With an authenticated `vercel` CLI: read it from `protectionBypass` in `vercel api /v9/projects/<project>`, then either send header `x-vercel-protection-bypass: <secret>` or visit once with `?x-vercel-protection-bypass=<secret>&x-vercel-set-bypass-cookie=true` (sets an httpOnly cookie; navigation afterwards is clean). If no secret exists, ask a project admin to add one (Project Settings → Deployment Protection → Protection Bypass for Automation) — creating one yourself mutates the project's security config; don't do it unprompted. Newly created secrets take a few seconds to propagate.
-- **Login walls with OAuth/SSO handoff through localhost:** flows that bounce through a `127.0.0.1` helper fail headless Chrome's Local Network Access checks. Install the launch-mutator plugin once — `agent-browser plugin add agent-browser-plugin-allow-loopback` — then log in interactively via agent-browser; the session persists in the daemon.
-- Verify auth *before* capturing — a login page screenshot labeled "before" is worse than no screenshot.
+### Vercel preview deployments (deployment protection)
+
+Preview URLs behind Vercel Authentication (SSO) or Passport 302-redirect to `vercel.com/sso-api`. The reliable way through is the project's **automation bypass secret** (verified against both protection types, 2026-07):
+
+1. Read it (authenticated `vercel` CLI): the 32-char key under `protectionBypass` with scope `automation-bypass` in `vercel api /v9/projects/<project> --scope <team>`.
+2. Use it, either way works:
+   - header on every request: `x-vercel-protection-bypass: <secret>` — right for curl and for proxies that can inject headers;
+   - or visit once with `?x-vercel-protection-bypass=<secret>&x-vercel-set-bypass-cookie=true` — sets an httpOnly `_vercel_jwt` cookie scoped to that deployment host, and the redirect strips the secret from the URL. Right for browser sessions: navigation afterwards is clean.
+3. Verify before shooting: `curl -s -o /dev/null -w "%{http_code} %{redirect_url}" <url>` — any redirect to `vercel.com/sso-api` means still blocked; 200/307/404 mean you're through to the app.
+
+Behaviors worth knowing (all verified):
+
+- Secrets apply to **existing** deployments immediately — no redeploy needed.
+- A **newly created** secret takes a few seconds to propagate to the edge; retry briefly before concluding it doesn't work.
+- Reading a secret requires sufficient team role, and **creating** one requires more (member+); if the API shows none, ask a project admin to add it (Project Settings → Deployment Protection → Protection Bypass for Automation). Don't create one unprompted — it's a change to the project's security config.
+- The Vercel MCP's shareable-URL tools (`get_access_to_vercel_url` / `web_fetch_vercel_url`) do **not** get through SSO-protected previews (as of mid-2026) — don't burn time there.
+- The bypass query params travel on cross-origin redirects if you blindly follow them; prefer the header, or the cookie flow which strips them.
+
+### Login walls (OAuth/SSO handoff through localhost)
+
+Flows that bounce through a `127.0.0.1` helper fail headless Chrome's Local Network Access checks. Install the launch-mutator plugin once — `agent-browser plugin add agent-browser-plugin-allow-loopback` — then log in interactively via agent-browser; the session persists in the daemon.
+
+Verify auth *before* capturing — a login page screenshot labeled "before" is worse than no screenshot.
 
 ## Parity rules (what makes comparisons honest)
 

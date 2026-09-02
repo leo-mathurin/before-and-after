@@ -167,21 +167,12 @@ export default function Page() {
 
             <div className="space-y-2">
               <p className="text-sm">
-                Upload to a custom image storage service
+                Publish to a PR with inline images and video (gh ≥ 2.99)
               </p>
-              <Code>before-and-after url1 url2 --upload my-s3-uploader</Code>
+              <Code>gh pr edit 13 --body-file body.md --attach ./captures/after.png</Code>
               <p className="text-sm mt-3">
-                By default, images are uploaded to{" "}
-                <a
-                  href="https://0x0.st"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-neutral-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2 rounded-sm"
-                >
-                  0x0.st
-                </a>
-                . For heavy usage or sensitive captures, use your own upload
-                handler.
+                Media uploads to GitHub&apos;s own CDN and local references are
+                rewritten in place, so nothing needs separate hosting.
               </p>
             </div>
           </section>
