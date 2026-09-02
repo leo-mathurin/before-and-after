@@ -6,7 +6,6 @@ export default function Page() {
   return (
     <div className="min-h-screen bg-[#F3F3F3] text-neutral-500">
       <main className="py-10 sm:py-16">
-        {/* Header - constrained width */}
         <div className="max-w-[540px] mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between mb-4">
             <a
@@ -18,30 +17,18 @@ export default function Page() {
               </h1>
             </a>
             <nav className="flex items-center gap-2.5 sm:gap-4 text-[13px] sm:text-sm">
-              <a
-                href="#install"
-                className="text-neutral-500 hover:text-neutral-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2 rounded-sm"
-              >
+              <a href="#install" className="text-neutral-500 hover:text-neutral-800 transition-colors">
                 Install
               </a>
-              <a
-                href="#skill"
-                className="text-neutral-500 hover:text-neutral-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2 rounded-sm"
-              >
-                Skill
-              </a>
-              <a
-                href="#options"
-                className="text-neutral-500 hover:text-neutral-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2 rounded-sm"
-              >
-                Options
+              <a href="#workflow" className="text-neutral-500 hover:text-neutral-800 transition-colors">
+                Workflow
               </a>
               <a
                 href="https://github.com/vercel-labs/before-and-after"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="GitHub"
-                className="text-neutral-500 hover:text-neutral-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2 rounded-sm"
+                className="text-neutral-500 hover:text-neutral-800 transition-colors"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -59,126 +46,63 @@ export default function Page() {
             </nav>
           </div>
           <p className="mb-8 sm:mb-12 text-[14px] sm:text-[15px]">
-            Before and after is a tool that adds before and after screenshots to
-            your PRs. Add it as a skill for your agent to call automatically or
-            use it directly from the command line.
+            An agent skill that attaches screenshots and screen recordings to pull request descriptions.
           </p>
         </div>
 
-        {/* Animation - wider, extra padding on mobile for transformed elements */}
         <div className="mb-10 sm:mb-16 px-8 sm:px-0">
           <AutoPlayHero />
         </div>
 
-        {/* Content - constrained width */}
         <div className="max-w-[540px] mx-auto px-4 sm:px-6 space-y-8 sm:space-y-10">
           <section id="install" className="scroll-mt-8 space-y-3">
             <h2 className="text-neutral-800">Install</h2>
-            <p className="text-sm">Install globally to use from anywhere</p>
-            <Code>npm i -g @vercel/before-and-after</Code>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="text-neutral-800">Basic Use</h2>
-            <p className="text-sm">
-              Capture any two URLs, protocol is optional
-            </p>
-            <Code>before-and-after site.com localhost:3000</Code>
-          </section>
-
-          <hr className="border-neutral-100" />
-
-          <section id="skill" className="scroll-mt-8 space-y-3">
-            <h2 className="text-neutral-800">Add Skill</h2>
-            <p className="text-sm">
-              Show your agent how and when to take before and afters. The skill
-              uses{" "}
-              <code className="text-neutral-800 bg-neutral-50 px-1 sm:px-1.5 py-0.5 rounded font-mono text-[12px] sm:text-[14px]">
-                gh
-              </code>{" "}
-              to detect the associated PR with your branch and (soon){" "}
-              <code className="text-neutral-800 bg-neutral-50 px-1 sm:px-1.5 py-0.5 rounded font-mono text-[12px] sm:text-[14px]">
-                vercel
-              </code>{" "}
-              to bypass deployment protection when capturing from Vercel preview
-              branches
-            </p>
+            <p className="text-sm">Add the skill to your agent environment.</p>
             <Code>npx skills add vercel-labs/before-and-after</Code>
           </section>
 
           <hr className="border-neutral-100" />
 
-          <section id="options" className="scroll-mt-8 space-y-6">
-            <h2 className="text-neutral-800">Options</h2>
+          <section className="space-y-3">
+            <h2 className="text-neutral-800">Skill First</h2>
+            <p className="text-sm">
+              Browser navigation, authentication, screenshots, and recordings stay with the version-matched
+              skills bundled in <code className="text-neutral-800 bg-neutral-50 px-1 py-0.5 rounded">agent-browser</code>.
+              Before and after only formats existing local media and publishes it through{" "}
+              <code className="text-neutral-800 bg-neutral-50 px-1 py-0.5 rounded">gh --attach</code>.
+            </p>
+          </section>
+
+          <hr className="border-neutral-100" />
+
+          <section id="workflow" className="scroll-mt-8 space-y-6">
+            <h2 className="text-neutral-800">Workflow</h2>
 
             <div className="space-y-2">
-              <p className="text-sm">
-                Capture a specific element using a CSS selector
-              </p>
-              <Code>before-and-after url1 url2 &quot;.hero&quot;</Code>
+              <p className="text-sm">Capture media with agent-browser.</p>
+              <Code>agent-browser screenshot captures/after.png</Code>
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm">
-                Use different selectors for before and after
-              </p>
-              <Code>
-                before-and-after url1 url2 &quot;.old&quot; &quot;.new&quot;
-              </Code>
+              <p className="text-sm">Format a before and after pair.</p>
+              <Code>node skill/scripts/format.mjs --before captures/before.png --after captures/after.png</Code>
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm">
-                Capture at mobile (375×812), tablet (768×1024), or custom
-                viewport
-              </p>
-              <Code>before-and-after url1 url2 --mobile</Code>
-              <Code>before-and-after url1 url2 --size 1920x1080</Code>
+              <p className="text-sm">Use after-only media for a net-new preview.</p>
+              <Code>node skill/scripts/format.mjs --after captures/new-page.png</Code>
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm">Capture the entire scrollable page</p>
-              <Code>before-and-after url1 url2 --full</Code>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm">
-                Output a markdown table for PR descriptions
-              </p>
-              <Code>before-and-after url1 url2 --markdown</Code>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm">
-                Use existing images instead of capturing URLs
-              </p>
-              <Code>before-and-after before.png after.png</Code>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm">Mix URLs and images</p>
-              <Code>before-and-after before.png localhost:3000</Code>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm">Save to a custom location</p>
-              <Code>before-and-after url1 url2 --output ./screenshots</Code>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm">
-                Publish to a PR with inline images and video (gh ≥ 2.99)
-              </p>
+              <p className="text-sm">Publish with GitHub-hosted attachments.</p>
               <Code>gh pr edit 13 --body-file body.md --attach ./captures/after.png</Code>
               <p className="text-sm mt-3">
-                Media uploads to GitHub&apos;s own CDN and local references are
-                rewritten in place, so nothing needs separate hosting.
+                GitHub uploads the media to its own CDN and rewrites matching local references in the PR body.
               </p>
             </div>
           </section>
         </div>
 
-        {/* Footer */}
         <footer className="max-w-[540px] mx-auto px-4 sm:px-6 mt-10 sm:mt-16 pt-6 sm:pt-8 border-t border-neutral-100">
           <p className="text-sm text-neutral-500 flex flex-col items-center gap-2 sm:flex-row sm:justify-between w-full">
             <span className="inline-flex items-center gap-1.5">
@@ -187,7 +111,7 @@ export default function Page() {
                 href="https://x.com/jamesvclements"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-neutral-800 hover:underline inline-flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2 rounded-sm"
+                className="text-neutral-800 hover:underline inline-flex items-center gap-1"
               >
                 <img
                   src="https://avatars.githubusercontent.com/u/20052710?v=4"
@@ -205,10 +129,9 @@ export default function Page() {
                 href="https://agentbrowser.dev"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-neutral-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2 rounded-sm"
+                className="text-neutral-800 hover:underline"
               >
-                agent-browser{" "}
-                <span className="text-[9px] relative -top-px">▲</span>
+                agent-browser <span className="text-[9px] relative -top-px">▲</span>
               </a>
             </span>
           </p>

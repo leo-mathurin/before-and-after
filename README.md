@@ -1,6 +1,8 @@
 # before-and-after
 
-An agent skill that adds before and after screenshots — and video — to your PRs. The skill teaches your agent when and how to capture honest visual comparisons; a few bundled scripts handle the parts that must be deterministic (parity capture, video post-processing, output formatting).
+An agent skill for attaching existing screenshots and screen recordings to GitHub pull request descriptions.
+
+The skill delegates browser navigation, authentication, screenshots, and recordings to the version-matched skills bundled with [agent-browser](https://agentbrowser.dev). Its only script formats local media for `gh --attach` and safely replaces a marked block in the PR body.
 
 ![before-and-after](https://jm.sv/before-and-after/opengraph-image.png)
 
@@ -10,33 +12,46 @@ An agent skill that adds before and after screenshots — and video — to your 
 npx skills add vercel-labs/before-and-after
 ```
 
-Or via npm (same contents, semver-pinnable — useful for baking into agent sandboxes):
+Requirements:
+
+- `agent-browser` for producing media;
+- GitHub CLI 2.99 or newer for `gh --attach`.
+
+## What it adds
+
+- Side-by-side image tables for before/after pairs.
+- `Preview` output for after-only media.
+- Own-line video attachments that GitHub renders as inline players.
+- Repeatable labels for multiple captures.
+- Idempotent marker replacement that preserves the rest of the PR description.
+- Exact local attachment paths for `gh pr edit --attach`.
+
+## Example
+
+After capturing files with `agent-browser`:
 
 ```bash
-npm i -g @vercel/before-and-after
+node skill/scripts/format.mjs \
+  --before captures/before.png \
+  --after captures/after.png \
+  > /tmp/block.md
+
+node skill/scripts/format.mjs \
+  --attach-list \
+  --before captures/before.png \
+  --after captures/after.png
 ```
 
-Requires [agent-browser](https://agentbrowser.dev) (`npm i -g agent-browser && agent-browser install`) and `ffmpeg` for video.
+See `skill/SKILL.md` for the complete PR publishing workflow.
 
-## What the agent gets
-
-- **A judgment guide** (`skill/SKILL.md`): choosing targets, resolving what "before" means, handling net-new pages (after-only "Preview" output), driving stateful UI with raw agent-browser before capturing, verifying captures before publishing, and getting through Vercel deployment protection.
-- **`capture.mjs`** — parity engine: same viewport, wait conditions, and timing on both sides, across any number of viewports; `--record <seconds>` for video (mp4 + poster frame per side).
-- **`format.mjs`** — the canonical PR block, built for `gh --attach` (gh ≥ 2.99): image tables and inline-playing videos with zero uploads on GitHub surfaces; hosted mode (poster-frame→mp4 cells) for everywhere else. Attribution, idempotent marker comments, after-only "Preview" mode.
-- **`prewarm.mjs`** — idempotent browser warm-up so the first capture doesn't pay browser launch.
-- **`upload.mjs`** — Vercel Blob uploads via `BLOB_READ_WRITE_TOKEN` for non-GitHub surfaces, emitting the URL map `format.mjs`'s hosted mode consumes.
-
-## Quick taste
+## Verification
 
 ```bash
-node skill/scripts/capture.mjs \
-  --before vercel.com/pricing --after preview-abc.vercel.sh/pricing \
-  --viewport desktop --viewport mobile --out ./captures
-node skill/scripts/format.mjs --manifest ./captures/manifest.json --url-map urls.json
+pnpm verify
 ```
 
-`before-and-after <before> <after>` still works as a frozen alias for `capture.mjs`. It will never grow another flag.
+This runs the deterministic formatter tests, validates the skill boundary, and uses the installed `agent-browser` to capture and format this repository's local fixtures. Protected Vercel and real GitHub attachment checks are opt-in release probes; see `VERIFICATION.md`.
 
-## Stability
+## Scope
 
-The scripts are the skill's internal interface — they version with the SKILL.md and may change freely between releases. If you need something stable to build on, build on [agent-browser](https://agentbrowser.dev) directly; that's all these scripts do.
+This package deliberately does not wrap `agent-browser`, capture URLs, manage Vercel authentication, convert videos, or host media. Those capabilities belong to their source tools.

@@ -11,10 +11,6 @@ overrides:
 importers:
 
   .:
-    dependencies:
-      agent-browser:
-        specifier: '*'
-        version: 0.8.5
     devDependencies:
       '@types/node':
         specifier: ^22
@@ -716,10 +712,6 @@ packages:
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
-
-  agent-browser@0.8.5:
-    resolution: {integrity: sha512-A9mHhju6J5bIALVYpq6eO82S0PurLIYMMLte4p4IxP7pj3/D35orp4Ulinv3BJu9iJ//camM4FHoSoXQeENXqw==}
-    hasBin: true
 
   agentation@2.2.0:
     resolution: {integrity: sha512-DIkXtC/XpOdAK/X1qYZMYocSjfU7EKe5bYG5DyxEr2wIuSxEVi2edSQsIWbB+k/S3yvAnnCfpuTkHh8LOvYxgQ==}
@@ -2115,16 +2107,10 @@ snapshots:
     optional: true
 
   agent-base@7.1.4:
-    optional: true
-
-  agent-browser@0.8.5:
-    dependencies:
-      playwright-core: 1.58.0
-      ws: 8.19.0
-      zod: 3.25.76
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+    optional: true
 
   agentation@2.2.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
     optionalDependencies:
