@@ -40,4 +40,4 @@ Finds or creates a draft PR from the `verification-fixture` branch and prints it
 
 ## Boundary
 
-Tests the seams this skill owns. Does not duplicate agent-browser, Vercel Deployment Protection, or GitHub CLI coverage. Choosing persuasive evidence and PR placement (SPEC release 3) will need scenario-based agent evals, not more scripts.
+Tests the seams this skill owns. Does not duplicate agent-browser, Vercel Deployment Protection, or GitHub CLI coverage. The contract checks that placement and evidence-hierarchy guidance ships with the skill; judging ambiguous descriptions and choosing persuasive captures still need scenario-based agent evals, not more scripts.

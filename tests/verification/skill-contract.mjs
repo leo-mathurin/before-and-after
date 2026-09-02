@@ -51,6 +51,23 @@ for (const marker of ["<!-- before-and-after:start -->", "<!-- before-and-after:
 }
 assert(skill.includes("before-and-after:start/end"), "SKILL.md must name the marker block it replaces");
 
+// Placement contract: judgment stays in the skill, and must cover safe anchoring,
+// evidence hierarchy, preservation, and rendered-order verification.
+const placement = skill.match(/## Place the evidence\n([\s\S]*?)\n## Publish/)?.[1] ?? "";
+assert(placement, "SKILL.md must include a Place the evidence section before Publish");
+for (const [phrase, message] of [
+  ["existing Preview or deployment-link section", "placement must account for Preview or deployment links"],
+  ["before implementation-heavy sections", "placement must precede implementation-heavy sections"],
+  ["proves the PR first", "primary PR evidence must come first"],
+  ["supplemental formats", "supplemental evidence must follow primary evidence"],
+  ["as a demo", "skill demonstrations must be labeled as demos"],
+  ["10 fps", "material recorder limitations must be disclosed"],
+  ["preserve every byte of unrelated prose", "placement must preserve unrelated prose"],
+  ["open the rendered PR", "placement must be verified in rendered GitHub"],
+]) {
+  assert(placement.includes(phrase), message);
+}
+
 if (failures.length) {
   for (const failure of failures) console.error(`FAIL: ${failure}`);
   process.exit(1);

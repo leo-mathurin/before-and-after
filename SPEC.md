@@ -53,13 +53,14 @@ The skill decides what evidence best proves the change, then iterates until it i
 
 ### PR placement
 
-- [ ] Place visual evidence toward the top of a new or existing PR, after enough introductory context for the reader to understand what is being shown.
-- [ ] Prefer inserting after an existing Preview section, deployment link, or short opening summary and before implementation-heavy sections such as Details, Changes, Testing, or Notes.
-- [ ] Treat headings and section order as semantic hints rather than requiring exact heading names.
-- [ ] Never invent, rewrite, or expand the PR description merely to create a placement anchor.
-- [ ] Preserve all existing prose and move or replace only the marked before-and-after block.
-- [ ] Fall back conservatively when no clear anchor exists instead of splitting a paragraph, list, table, code block, or other Markdown structure.
-- [ ] Verify that the rendered evidence appears in the intended reading order, not only that the source markers were inserted successfully.
+- [x] Place visual evidence toward the top of a new or existing PR, after enough introductory context for the reader to understand what is being shown.
+- [x] Prefer inserting after an existing Preview section, deployment link, or short opening summary and before implementation-heavy sections such as Details, Changes, Testing, or Notes.
+- [x] Treat headings and section order as semantic hints rather than requiring exact heading names.
+- [x] Never invent, rewrite, or expand the PR description merely to create a placement anchor.
+- [x] Preserve all existing prose and move or replace only the marked before-and-after block.
+- [x] Fall back conservatively when no clear anchor exists instead of splitting a paragraph, list, table, code block, or other Markdown structure.
+- [x] Put evidence that proves the PR before supplemental demos, alternate formats, or skill demonstrations; label those clearly and disclose material capture limitations beside them.
+- [x] Verify that the rendered evidence appears in the intended reading order, not only that the source markers were inserted successfully.
 
 ### State parity
 

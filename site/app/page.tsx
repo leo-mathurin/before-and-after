@@ -59,11 +59,11 @@ export default function Page() {
         <div className="max-w-[540px] mx-auto px-4 sm:px-6">
           <p className="text-[14px] sm:text-[15px]">
             Browser navigation, authentication, and capture stay with the version-matched skills bundled in{" "}
-            <code className="font-mono text-[12px] sm:text-[14px] text-[#6f42c1] bg-neutral-50 px-1 py-0.5 rounded">
+            <code className="font-mono text-[13px] sm:text-[15px] text-[#6f42c1] bg-neutral-50 px-1 py-0.5 rounded shadow-[0_0_0_2px_#fafafa]">
               agent-browser
             </code>
             ; before and after formats the media and publishes it through{" "}
-            <code className="font-mono text-[12px] sm:text-[14px] bg-neutral-50 px-1 py-0.5 rounded">
+            <code className="font-mono text-[13px] sm:text-[15px] bg-neutral-50 px-1 py-0.5 rounded shadow-[0_0_0_2px_#fafafa]">
               <span className="text-[#6f42c1]">gh</span>{" "}
               <span className="text-[#2b5581]">--attach</span>
             </code>

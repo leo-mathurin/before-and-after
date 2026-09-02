@@ -20,6 +20,7 @@ Requires `agent-browser` and GitHub CLI 2.99+ (for `gh --attach`).
 - `Preview` blocks for after-only media.
 - Own-line videos that GitHub renders as players, and a two-step HTML video table once attachment URLs exist.
 - Idempotent replacement of one `<!-- before-and-after:start/end -->` block; the rest of the PR description is untouched.
+- Placement guidance that keeps real visual proof near the top and ahead of clearly labeled supplemental demos.
 
 See `skill/SKILL.md` for the workflow.
 

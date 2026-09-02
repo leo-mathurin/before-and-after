@@ -74,6 +74,20 @@ Add `--attribution "<name>"` to prefix the block with a `> Before/after by <name
 
 Images render in tables. Local videos initially render on their own lines so `gh --attach` can upload them and expose their final attachment URLs. Before/after video tables use the two-step workflow below because `gh --attach` does not rewrite local references inside `<video src>` attributes.
 
+## Place the evidence
+
+Read the existing PR description before inserting a new marked block. Put visual evidence near the top, after the short opening context and an existing Preview or deployment-link section when present, but before implementation-heavy sections such as Details, Changes, Testing, or Notes.
+
+Use this reading order inside the visual evidence:
+
+1. Put the real before/after or Preview evidence that proves the PR first.
+2. Put supplemental formats, alternate states, or demonstrations after the primary evidence.
+3. Label anything that demonstrates this skill rather than the PR itself as a demo, and state material limitations beside it. For example, note the installed agent-browser recorder's current 10 fps limit when motion smoothness matters.
+
+Headings are semantic hints, not required names. Never invent or rewrite prose merely to create an anchor, and never split a paragraph, list, table, code block, or other Markdown structure. If no safe anchor is clear, append the block rather than risking damage. If a marked block already exists, move or replace that whole block only; preserve every byte of unrelated prose.
+
+After publishing, open the rendered PR and confirm the primary evidence appears before supplemental demos and before the implementation details.
+
 ## Publish
 
 Preserve the existing PR description and replace only this skill's marked block:
@@ -103,7 +117,7 @@ gh pr edit "$PR" --body-file /tmp/pr-body-next.md "${ATTACH_ARGS[@]}"
 
 Run the formatter and `gh` from the same directory. `gh --attach` uploads the local files to GitHub and rewrites their matching local references in the PR body.
 
-After publishing, fetch or open the PR description and confirm that no `./captures/...` references remain inside the marked block.
+After publishing, fetch or open the PR description and confirm that no `./captures/...` references remain inside the marked block and that the evidence appears in the intended reading order.
 
 ### Publish a video table
 
