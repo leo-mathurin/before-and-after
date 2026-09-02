@@ -22,6 +22,18 @@ Use `agent-browser` to create the screenshots or recordings. This skill only own
 
 The formatter supports PNG, JPEG, GIF, WebP, MP4, MOV, and WebM files. Use an `--after` file without a matching `--before` file for a net-new preview.
 
+### Equal-height image pairs
+
+GitHub vertically centers a shorter image inside a Markdown table cell. For full-page before/after screenshots, make both files the same pixel height so their top edges align:
+
+1. Open both pages at the same viewport and state.
+2. Read `document.documentElement.scrollHeight` in both sessions.
+3. Append bottom-only space to the shorter page until both scroll heights match, then take both `--full` screenshots.
+
+The padding may be transparent or use the capture tool's default canvas. Never add space above the page. For component or section comparisons, capture the same scoped region instead of padding unrelated page content.
+
+Use raw `agent-browser eval` for this DOM-only adjustment; do not add an image-processing dependency to this skill. Confirm the resulting files have equal pixel dimensions before publishing.
+
 ## Format
 
 Pass one `--before` and `--after` pair for each comparison. Repeat `--label` to identify multiple pairs:

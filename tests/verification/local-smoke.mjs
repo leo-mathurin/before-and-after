@@ -28,9 +28,34 @@ function run(command, args, options = {}) {
 }
 
 const pages = {
-  "/before": "<!doctype html><title>Before</title><main><h1>Before</h1><button>Open</button></main>",
-  "/after": "<!doctype html><title>After</title><main><h1>After</h1><button>Open</button></main>",
+  "/before": "<!doctype html><title>Before</title><main style='min-height:1400px;background:#eee'><h1>Before</h1><button>Open</button></main>",
+  "/after": "<!doctype html><title>After</title><main style='min-height:900px;background:#eee'><h1>After</h1><button>Open</button></main>",
 };
+
+function pngDimensions(file) {
+  const header = readFileSync(file).subarray(0, 24);
+  return { width: header.readUInt32BE(16), height: header.readUInt32BE(20) };
+}
+
+async function pageHeight(session) {
+  return Number(await run(agentBrowser, ["--session", session, "eval", "document.documentElement.scrollHeight"]));
+}
+
+async function padToHeight(session, targetHeight) {
+  const script = `(() => {
+    const currentHeight = document.documentElement.scrollHeight;
+    const delta = ${targetHeight} - currentHeight;
+    if (delta <= 0) return currentHeight;
+    const spacer = document.createElement("div");
+    spacer.dataset.beforeAfterPadding = "";
+    spacer.style.height = delta + "px";
+    spacer.style.flex = "none";
+    spacer.style.width = "100%";
+    document.body.append(spacer);
+    return document.documentElement.scrollHeight;
+  })()`;
+  return Number(await run(agentBrowser, ["--session", session, "eval", script]));
+}
 
 const server = createServer((request, response) => {
   const body = pages[request.url] ?? "Not found";
@@ -47,15 +72,29 @@ try {
   await run(agentBrowser, ["skills", "get", "core", "--full"]);
   await run(agentBrowser, ["--session", session, "open", `${origin}/before`]);
   await run(agentBrowser, ["--session", session, "set", "viewport", "1280", "720"]);
-  await run(agentBrowser, ["--session", session, "screenshot", join(output, "before.png")]);
-  await run(agentBrowser, ["--session", session, "open", `${origin}/after`]);
-  await run(agentBrowser, ["--session", session, "screenshot", join(output, "after.png")]);
-  await run(agentBrowser, ["--session", session, "record", "start", join(output, "preview.webm")]);
-  await run(agentBrowser, ["--session", session, "wait", "250"]);
-  await run(agentBrowser, ["--session", session, "record", "stop"]);
+  const beforeHeight = await pageHeight(session);
+
+  const afterSession = `${session}-after`;
+  await run(agentBrowser, ["--session", afterSession, "open", `${origin}/after`]);
+  await run(agentBrowser, ["--session", afterSession, "set", "viewport", "1280", "720"]);
+  const afterHeight = await pageHeight(afterSession);
+  const targetHeight = Math.max(beforeHeight, afterHeight);
+  await padToHeight(session, targetHeight);
+  await padToHeight(afterSession, targetHeight);
+
+  await run(agentBrowser, ["--session", session, "screenshot", join(output, "before.png"), "--full"]);
+  await run(agentBrowser, ["--session", afterSession, "screenshot", join(output, "after.png"), "--full"]);
+  await run(agentBrowser, ["--session", afterSession, "record", "start", join(output, "preview.webm")]);
+  await run(agentBrowser, ["--session", afterSession, "wait", "250"]);
+  await run(agentBrowser, ["--session", afterSession, "record", "stop"]);
 
   for (const file of ["before.png", "after.png", "preview.webm"]) {
     if (statSync(join(output, file)).size === 0) throw new Error(`${file} is empty`);
+  }
+  const beforeDimensions = pngDimensions(join(output, "before.png"));
+  const afterDimensions = pngDimensions(join(output, "after.png"));
+  if (JSON.stringify(beforeDimensions) !== JSON.stringify(afterDimensions)) {
+    throw new Error(`full-page captures have mismatched dimensions: ${JSON.stringify({ beforeDimensions, afterDimensions })}`);
   }
 
   const formatter = resolve(root, "skill/scripts/format.mjs");
@@ -71,5 +110,6 @@ try {
   console.log(`Local browser-to-Markdown smoke passed with ${version}: ${output}`);
 } finally {
   await run(agentBrowser, ["--session", session, "close"]).catch(() => {});
+  await run(agentBrowser, ["--session", `${session}-after`, "close"]).catch(() => {});
   await new Promise((resolvePromise) => server.close(resolvePromise));
 }
