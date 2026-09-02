@@ -47,9 +47,11 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: |
+      - name: Install agent-browser and ffmpeg (recording needs ffmpeg)
+        run: |
           npm install -g agent-browser
           agent-browser install --with-deps
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - run: pnpm verify:github
         env:
           GH_TOKEN: ${{ github.token }}
