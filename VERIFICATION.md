@@ -13,6 +13,8 @@ Each layer answers one question. The default suite is local and repeatable; the 
 
 `pnpm verify` runs the first three. `pnpm verify:live` runs the GitHub and Vercel probes. CI runs `pnpm verify` on every push and PR, and the GitHub probe on non-fork PRs and a weekly schedule so GitHub rendering drift is caught even when nothing changes here.
 
+The GitHub probe in CI needs a `FIXTURE_GITHUB_TOKEN` repository secret holding a user PAT with `repo` scope. `gh --attach` uploads through an endpoint that rejects the Actions installation token (`unsupported authentication type`), so `GITHUB_TOKEN` cannot be used. Without the secret the job logs a notice and skips. Attachments and edits are attributed to the PAT's user.
+
 ## What each layer actually checks
 
 ### Local browser smoke
