@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Format existing local screenshots or recordings for a GitHub PR body.
- * Browser operation belongs to agent-browser; this script only owns the
+ * Capture belongs to external source tools; this script only owns the
  * deterministic attachment markup and marker replacement contract.
  */
 

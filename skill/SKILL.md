@@ -1,28 +1,39 @@
 ---
 name: before-and-after
-description: Add existing screenshots or screen recordings to a GitHub pull request as a before/after or preview block. Use when a PR needs visual media attached to its description. Browser navigation and capture belong to agent-browser.
+description: Add browser or Expo simulator screenshots and screen recordings to a GitHub pull request as a before/after or preview block. Use when a PR needs visual evidence in its description. Browser capture belongs to agent-browser. iOS and Android simulator capture belongs to Argent.
 ---
 
 # Add visual media to a PR
 
-Use `agent-browser` to create the screenshots or recordings. This skill only owns the GitHub PR attachment workflow.
+Use the source tool for navigation and capture. This skill owns the workflow that turns the resulting media into GitHub PR evidence.
 
 ## Capture
 
-1. Load the version-matched core instructions with `agent-browser skills get core --full` and follow them for sessions, navigation, page state, screenshots, and recordings.
-2. If a Vercel URL is protected, load `agent-browser skills get protected-vercel-deployments --full`. Do not reproduce its authentication workflow here.
-3. Save media under the repository with paths that contain no whitespace, for example:
+Choose the capture backend before you act:
 
-   ```text
-   captures/desktop-before.png
-   captures/desktop-after.png
-   captures/mobile-before.png
-   captures/mobile-after.png
-   ```
+- For a web page or Chromium app, use `agent-browser` and follow the browser workflow below.
+- For an Expo app on an iOS Simulator or Android Emulator, read [references/expo-argent.md](references/expo-argent.md) and use Argent.
+- When the user provides existing media, skip capture and continue with Format.
+
+Save media under the repository with paths that contain no whitespace, for example:
+
+```text
+captures/desktop-before.png
+captures/desktop-after.png
+captures/ios-before.png
+captures/ios-after.png
+captures/android-before.mp4
+captures/android-after.mp4
+```
 
 The formatter supports PNG, JPEG, GIF, WebP, MP4, MOV, and WebM files. Use an `--after` file without a matching `--before` file for a net-new preview.
 
-### Screen recordings
+### Browser
+
+1. Load the version-matched core instructions with `agent-browser skills get core --full` and follow them for sessions, navigation, page state, screenshots, and recordings.
+2. If a Vercel URL is protected, load `agent-browser skills get protected-vercel-deployments --full`. Do not reproduce its authentication workflow here.
+
+### Browser screen recordings
 
 `agent-browser record start` creates a fresh browser context. It preserves cookies and local storage, but an origin-scoped header used to open a protected Vercel Preview may not carry into that new context. Before recording a protected Preview:
 
@@ -35,7 +46,7 @@ Do not assume that a page which worked before `record start` will remain authent
 
 Agent-browser `0.35.2` and `0.36.0` capture at a hardcoded 10 fps with no CLI or environment override. Inspect the installed version and its recording reference rather than assuming this stays true in later releases. Preserve the source cadence when transcoding: changing the container to 30 or 60 fps only duplicates frames and does not make motion smoother. For animation evidence that requires a higher real frame rate, use a genuinely higher-cadence capture path instead of upsampling agent-browser output.
 
-### Equal-height image pairs
+### Equal-height browser image pairs
 
 GitHub vertically centers a shorter image inside a Markdown table cell. For full-page before/after screenshots, make both files the same pixel height so their top edges align:
 
@@ -55,10 +66,10 @@ Pass one `--before` and `--after` pair for each comparison. Repeat `--label` to 
 node skill/scripts/format.mjs \
   --before captures/desktop-before.png \
   --after captures/desktop-after.png \
-  --before captures/mobile-before.png \
-  --after captures/mobile-after.png \
+  --before captures/ios-before.png \
+  --after captures/ios-after.png \
   --label Desktop \
-  --label Mobile \
+  --label iOS \
   > /tmp/before-and-after.md
 ```
 
@@ -143,7 +154,7 @@ Video comparisons are a first-class two-step publish operation:
 
 If URL extraction, formatting, or PR verification fails, keep the temporary comment so its uploaded attachments remain recoverable and retry from the last successful phase. Use own-line videos as the simple fallback.
 
-Do not publish captures containing Vercel OIDC tokens, bypass secrets, authenticated query parameters, or browser state files.
+Do not publish captures containing credentials, personal data, Vercel OIDC tokens, bypass secrets, authenticated query parameters, or browser state files.
 
 ## Script contract
 

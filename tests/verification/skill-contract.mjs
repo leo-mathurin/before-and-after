@@ -6,6 +6,7 @@ import { resolve } from "node:path";
 import { root } from "./lib.mjs";
 
 const skill = readFileSync(resolve(root, "skill/SKILL.md"), "utf8");
+const expoArgentReferencePath = "skill/references/expo-argent.md";
 const formatter = readFileSync(resolve(root, "skill/scripts/format.mjs"), "utf8");
 const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 const scripts = readdirSync(resolve(root, "skill/scripts")).sort();
@@ -23,8 +24,11 @@ assert(!packageJson.dependencies, "the skill must not have runtime dependencies"
 assert(!packageJson.peerDependencies?.["agent-browser"], "agent-browser must not be a package dependency");
 
 const packed = JSON.parse(execFileSync("npm", ["pack", "--dry-run", "--json"], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }))[0];
+const packedPaths = packed.files.map((file) => file.path);
 const unexpected = packed.files.map((file) => file.path).filter((path) => !/^(skill\/|package\.json$|README|LICENSE)/.test(path));
 assert(unexpected.length === 0, `npm pack would publish files outside skill/: ${unexpected.join(", ")}`);
+assert(packedPaths.includes(expoArgentReferencePath), `${expoArgentReferencePath} must ship with the skill`);
+assert(skill.includes("references/expo-argent.md"), "SKILL.md must route Expo simulator capture to its Argent reference");
 
 // Delegation boundary: capture and Vercel auth stay with agent-browser's own skills.
 assert(skill.includes("agent-browser skills get core --full"), "SKILL.md must delegate capture to the bundled core skill");

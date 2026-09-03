@@ -4,7 +4,8 @@
 
 ## Boundary
 
-- `agent-browser` owns navigation, authentication, page state, screenshots, and recordings; its bundled `protected-vercel-deployments` skill owns protected Preview access.
+- `agent-browser` owns browser navigation, authentication, page state, screenshots, and recordings; its bundled `protected-vercel-deployments` skill owns protected Preview access.
+- Argent owns Expo app control, screenshots, and recordings on iOS Simulators and Android Emulators.
 - GitHub CLI owns attachment upload and local-reference rewriting.
 - This skill owns the workflow between them, deterministic PR markup, marker replacement, and verification of the published result.
 
@@ -13,6 +14,7 @@ The skill must work from a raw checkout with no dependencies. Capture decisions 
 ## Release 1: skill-first foundation
 
 - [x] Delegate browser and protected-Preview work to agent-browser's skills.
+- [x] Delegate Expo simulator work to Argent's skills and MCP tools.
 - [x] Format existing image and video files for `gh --attach`; before/after and after-only.
 - [x] Preserve unrelated PR prose through a marked replacement block.
 - [x] Equalize full-page pair heights with bottom-only padding so GitHub tables align at the top.
