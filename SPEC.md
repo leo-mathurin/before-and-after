@@ -41,7 +41,7 @@ The skill decides what evidence best proves the change, then iterates until it i
 - [ ] Preserve exact paths, base paths, rewrites, locales, and query state between production and Preview.
 - [ ] Resolve the current deployment from metadata rather than deriving or reusing a stale hostname.
 - [ ] Distinguish changed pages from shared components that require several representative routes.
-- [ ] Recognize net-new routes and produce after-only Preview evidence.
+- [x] Require a verified pre-PR baseline for comparisons; use after-only Preview evidence for new UI or unavailable baselines.
 
 ### Evidence selection
 
@@ -85,7 +85,7 @@ The skill decides what evidence best proves the change, then iterates until it i
 ### Verification loop
 
 1. Form a hypothesis about the route, state, and capture type that best proves the change.
-2. Capture both sides with equivalent conditions.
+2. Capture both sides with equivalent conditions for existing UI, or only the final Preview for new UI or unavailable baselines.
 3. Inspect the media and objective metadata.
 4. Reject bad or unpersuasive evidence with a concrete reason.
 5. Adjust the target, state, scope, or capture type and repeat.

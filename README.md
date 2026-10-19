@@ -1,6 +1,6 @@
 # before-and-after
 
-An agent skill that attaches existing screenshots and screen recordings to a GitHub pull request as a before/after block.
+An agent skill that attaches screenshots and screen recordings to a GitHub pull request as a before/after comparison or a Preview.
 
 Browser work belongs to [agent-browser](https://agentbrowser.dev) and its bundled skills. Expo work on iOS Simulators and Android Emulators belongs to [Argent](https://argent.swmansion.com). Uploads belong to `gh --attach`. This skill owns the workflow between those tools and one dependency-free script that formats media and replaces a marked block in the PR body.
 
@@ -16,8 +16,8 @@ Requires GitHub CLI 2.99+ for `gh --attach`. Browser capture requires `agent-bro
 
 ## What it produces
 
-- Side-by-side image tables for before/after pairs, with equal-height full-page captures so tops align.
-- `Preview` blocks for after-only media.
+- Side-by-side image tables for UI that existed before the PR, with equal-height full-page captures so tops align.
+- `Preview` blocks for new UI or when a genuine pre-PR baseline cannot be verified or captured.
 - Own-line videos that GitHub renders as players, and a two-step HTML video table once attachment URLs exist.
 - Idempotent replacement of one `<!-- before-and-after:start/end -->` block; the rest of the PR description is untouched.
 - Placement guidance that keeps real visual proof near the top and ahead of clearly labeled supplemental demos.
