@@ -1,11 +1,20 @@
 ---
 name: before-and-after
-description: Add browser or Expo simulator screenshots and screen recordings to a GitHub pull request as a before/after or preview block. Use when a PR needs visual evidence in its description. Browser capture belongs to agent-browser. iOS and Android simulator capture belongs to Argent.
+description: Add browser or Expo simulator screenshots and screen recordings to a GitHub PR. Use when a PR needs visual evidence; compare UI that existed before the PR, and use a Preview for new UI. Browser capture belongs to agent-browser. iOS and Android simulator capture belongs to Argent.
 ---
 
 # Add visual media to a PR
 
 Use the source tool for navigation and capture. This skill owns the workflow that turns the resulting media into GitHub PR evidence.
+
+## Choose comparison or preview
+
+Before capturing or formatting media, check whether the UI being shown existed before the PR. Use the PR's merge-base with its target branch as the baseline, and verify the relevant page, screen, or component exists there.
+
+- **Before/after:** compare the actual baseline rendering with the PR version of the same UI. Capture the baseline revision or a deployment verified to match it, and keep the route, data, UI state, and viewport comparable. Record the baseline commit or deployment beside the evidence.
+- **Preview:** when the UI has no pre-PR counterpart, or a genuine baseline cannot be verified or captured, show only the final result. Pass only `--after` and label the evidence `Preview`.
+
+A previous commit within the PR is not a pre-PR baseline: fixing a component introduced by that same PR still calls for a Preview. Never manufacture a Before by degrading the new UI, reverting part of the PR, or showing a mock, unrelated page, blank page, or missing-route error. Apply the same baseline check to user-provided media.
 
 ## Capture
 
@@ -26,7 +35,7 @@ captures/android-before.mp4
 captures/android-after.mp4
 ```
 
-The formatter supports PNG, JPEG, GIF, WebP, MP4, MOV, and WebM files. Use an `--after` file without a matching `--before` file for a net-new preview.
+The formatter supports PNG, JPEG, GIF, WebP, MP4, MOV, and WebM files.
 
 ### Browser
 
